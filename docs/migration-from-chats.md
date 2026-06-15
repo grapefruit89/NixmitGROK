@@ -1,8 +1,61 @@
 # Kirschen aus USB-Chats
 
-Quelle: `/mnt/usbinspect/neuesmaterialfuergrok/` (Grok, Claude, DeepSeek) — ~709k Zeilen, destilliert für **Nix-Grok q958**.
+Quelle: `/mnt/usbinspect/neuesmaterialfuergrok/` auf USB — **nicht** im Git-Repo.  
+Im Repo: nur Destillation (`tools/chat_insights_seed.json`, ~30 Zeilen pro Kirsche).
+
+| Thema | Rolle für q958 |
+|-------|----------------|
+| **homelab_server** | **SSoT für Caddy, Pocket-ID, Blocky, Gleise** |
+| **nix_os** | Nix-Grok-Architektur, Rollout, Module |
+| **unraid** | **Nur Vorlage** (Inventar, Volumes) → `docs/unraid-migration-map.md` |
 
 Nix-Dateien bleiben autoritativ; diese Notiz ist die menschliche Destillation.
+
+---
+
+## homelab_server — Grok × Claude × DeepSeek
+
+### Thema: Forward-Auth + Pocket-ID
+
+| | Grok | Claude | DeepSeek | q958 |
+|---|------|--------|----------|------|
+| SPOF | Jeder Request → POST verify; Cache 5 min vorgeschlagen | Pocket-ID down = alle SSO-Dienste tot; auth.* nie hinter forward_auth | — | ✓ `sso_auth` + Keepalive; Cache **offen** |
+| Admin Gleis 2 | v9.0: Tailscale **oder** Freeze mTLS (widerspricht sich) | — | — | **Tailscale** `tailscale_admin` (Stufe 2) |
+
+### Thema: Cloudflare + Geo
+
+| | Grok | Claude | DeepSeek | q958 |
+|---|------|--------|----------|------|
+| Real-IP | CF-Connecting-IP + trusted_proxies | Blocky-Bootstrap 1.1.1.1 für ACME | `trusted_proxies cloudflare` war Root Cause für Geoblock-Bug | Stufe 5/8 |
+| Geo | Alles L4 nftables, Caddy-Geo raus | — | Geoblock scheiterte an private_ranges only | Geo → Stufe 8 nftables |
+
+### Thema: Blocky ↔ Caddy
+
+| | Grok | Claude | DeepSeek | q958 |
+|---|------|--------|----------|------|
+| Boot | — | `before=caddy` + Bootstrap-DNS | — | Bootstrap in `profile.nix` dns |
+| Laufzeit | — | **Watchdog + Gatus** — Renewal scheitert still wenn Blocky stirbt | — | **proposed** |
+| Impermanence | — | `/var/lib/pocket-id` vor Stufe 9 persistieren | — | Stufe 9 |
+
+### Thema: Streaming (Jellyfin)
+
+| | Grok | Claude | DeepSeek | q958 |
+|---|------|--------|----------|------|
+| Caddy | — | — | `flush_interval -1` + `keepalive off` | ✓ `streamer_headers` jellyfin.nix |
+| Upstream | — | — | Container-Name, nicht 172.18.0.1 | ✓ 127.0.0.1 |
+
+### Verworfen (homelab)
+
+- fwknop SPA (Grok) — zu komplex
+- transform-encoder Apache-Logs (Grok) — JSON + journald
+- caddy-security / AuthCrunch (Grok) — Pocket-ID reicht
+- Grok mTLS-Turm vs Tailscale-Widerspruch → **Tailscale + forward_auth**
+
+### Unraid-Chats
+
+- **55k Traefik-Zeilen** leben nur auf USB (`claude/unraid/`) — **nicht** im Repo
+- Caddy-Learnings aus Unraid-Chats sind in **homelab_server** konsolidiert (Tower v9.0)
+- Unraid = Inventar/Volumes, siehe `unraid-migration-map.md`
 
 ---
 

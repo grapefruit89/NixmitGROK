@@ -70,6 +70,86 @@
     "source_path": "deepseek/homelab_server/deepseek_answers.md"
   },
   {
+    "theme": "homelab_server",
+    "agent": "grok",
+    "title": "Geo/ASN eine Wahrheit — L4 nftables",
+    "content": "Geo komplett in nftables/ipset (Kernel), Caddy-Geoblock streichen. Zwei Wahrheiten (L4+L7) erschweren Debugging; Fail2ban sieht nft-Drops nicht in Caddy-Logs.",
+    "status": "proposed",
+    "rollout_stufe": 8,
+    "consensus": "grok",
+    "source_path": "grok/homelab_server/grok_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "grok",
+    "title": "JSON-Logging statt transform-encoder",
+    "content": "Apache-Style via transform-encoder ist Legacy für Fail2ban. journald + JSON + Loki/Grafana ist schneller und NixOS-nativ.",
+    "status": "accepted",
+    "rollout_stufe": 5,
+    "consensus": "grok",
+    "source_path": "grok/homelab_server/grok_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "grok",
+    "title": "fwknop SPA ablehnen",
+    "content": "UDP-HMAC Port-Knocking = Komplexitäts-Tsunami, Self-Lockout-Risiko. Verworfen zugunsten Tailscale (Gleis 2) + nftables L4.",
+    "status": "antipattern",
+    "rollout_stufe": null,
+    "consensus": "grok",
+    "source_path": "grok/homelab_server/grok_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "claude",
+    "title": "Blocky Watchdog + Gatus — nicht nur Before=caddy",
+    "content": "Before=caddy reicht nur beim Boot. Blocky-Absturz zur Laufzeit bricht ACME-Renewal still (TLS-Warning, dann Ausfall). WatchdogSec + Gatus auf Blocky:53.",
+    "status": "proposed",
+    "rollout_stufe": 5,
+    "consensus": "claude",
+    "source_path": "claude/homelab_server/claude_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "claude",
+    "title": "Pocket-ID Deadlock-Kette",
+    "content": "auth.* nie hinter forward_auth. Pocket-ID after postgresql after persist.mount. Sonst blockiert forward_auth alle SSO-Dienste wenn DB/Pocket-ID langsam.",
+    "status": "accepted",
+    "rollout_stufe": 5,
+    "consensus": "claude",
+    "source_path": "claude/homelab_server/claude_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "claude",
+    "title": "Journald → Vector/Loki statt /persist",
+    "content": "Unter Impermanence: lokale Journal-Persistenz auf SSD teuer. Logs sofort nach Loki (Stufe 4) — volles Audit ohne tmpfs-Verlust.",
+    "status": "proposed",
+    "rollout_stufe": 9,
+    "consensus": "claude",
+    "source_path": "claude/homelab_server/claude_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "claude",
+    "title": "Strukturelle Änderungen: nixos-rebuild boot",
+    "content": "Mount-Units, Kernel, Firewall, Impermanence-Pfade: boot + Reboot. switch nur für Service-Configs. Vor Major-Upgrade: git diff auf 30-storage.nix.",
+    "status": "accepted",
+    "rollout_stufe": null,
+    "consensus": "claude",
+    "source_path": "claude/homelab_server/claude_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "deepseek",
+    "title": "502 Root Cause: Upstream-Name nicht Gateway-IP",
+    "content": "Audiobookshelf-502 durch falschen Container-Namen/Port. Validierung: docker ps + caddy validate. Nix: feste 127.0.0.1:PORT aus my.ports.",
+    "status": "accepted",
+    "rollout_stufe": 5,
+    "consensus": "deepseek",
+    "source_path": "deepseek/homelab_server/deepseek_answers.md"
+  },
+  {
     "theme": "nix_os",
     "agent": "grok",
     "title": "Blocky RestrictNamespaces + ~@mount",
@@ -152,141 +232,31 @@
   {
     "theme": "unraid",
     "agent": "consensus",
-    "title": "Migration Reihenfolge Core→Media→AI",
-    "content": "redis/pocket-id/caddy zuerst, dann arr-stack, dann hermes. Siehe docs/unraid-migration-map.md.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "all",
-    "source_path": "neuesmaterialfuergrok/*/unraid/Docker_Containers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "consensus",
-    "title": "Appdata Tier-Mapping Unraid→q958",
-    "content": "/mnt/docker_and_vm/appdata/* (SSD) → /var/lib/<service> Tier A. /mnt/user/data/media → /mnt/media Tier C. /mnt/downloadcache → Tier B wenn SATA-SSD.",
-    "status": "accepted",
-    "rollout_stufe": 3,
-    "consensus": "all",
-    "source_path": "neuesmaterialfuergrok/*/unraid/Overview.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "consensus",
-    "title": "media-network vs bridge Netz-Trennung",
-    "content": "Arr/Caddy/Core auf media-network 172.18.0.x. Hermes/AnythingLLM isoliert auf default bridge 172.17.0.x — bei Nix: localhost + Caddy, Hermes eigener Socket.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "all",
-    "source_path": "neuesmaterialfuergrok/*/unraid/Overview.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "grok",
-    "title": "mTLS im handle-Block ist syntaktisch kaputt",
-    "content": "tls client_auth gehört auf Site-Ebene, nicht in handle. LAN≠kein-mTLS + WAN=mTLS auf gleicher Subdomain ist technisch unmöglich (Handshake vor IP-Check). Nix: Tailscale statt mTLS-Turm.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "grok",
-    "source_path": "grok/unraid/grok_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "grok",
-    "title": "LAN-Matcher: client_ip nicht remote_ip hinter CF",
-    "content": "Hinter Cloudflare-Proxy sieht remote_ip nur Edge-IPs. @lan Matcher muss client_ip mit trusted_proxies cloudflare + CF-Connecting-IP nutzen.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "grok+deepseek",
-    "source_path": "grok/unraid/grok_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "grok",
-    "title": "xcaddy Custom-Binary KISS auf Unraid",
-    "content": "5 Plugins in einem Binary (cloudflare-dns, maxmind, dynamicdns, cloudflare-ip, ratelimit) — kein extra DDNS-Container, kein Compose. Nix: Plugins via nixpkgs services.caddy.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "grok+deepseek",
-    "source_path": "grok/unraid/grok_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "grok",
-    "title": "Homepage v1.12.3 YAML-Schema",
-    "content": "forEach-Fehler: Gruppen brauchen collapsed:false + services:-Key. Widgets auf datetime-only, bookmarks []. Interne Docker-Namen statt externer URLs.",
-    "status": "proposed",
-    "rollout_stufe": 7,
-    "consensus": "grok",
-    "source_path": "grok/unraid/grok_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "claude",
-    "title": "Jellyfin Marker: LSIO vs offizielles Image",
-    "content": "linuxserver erwartet .jellyfin-config, jellyfin/jellyfin erwartet .jellyfin-data. Image-Wechsel ohne neuen Container bricht Marker-Sanity-Check. Migration: ein Image festlegen, Marker konsistent.",
-    "status": "accepted",
-    "rollout_stufe": 6,
-    "consensus": "claude",
-    "source_path": "claude/unraid/claude_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "claude",
-    "title": "Traefik-Phase auf Unraid obsolet für Nix",
-    "content": "55k Zeilen Traefik-Middleware-Chain (Labels, security-headers) — Quell-Setup vor Caddy-Migration. Für q958 irrelevant: natives Caddy + forward_auth.",
-    "status": "antipattern",
+    "title": "[Vorlage] Container-Inventar Tower",
+    "content": "Nur Referenz für Cutover-Reihenfolge und Volume-Pfade — Caddy/SSO-Logik aus homelab_server. Siehe docs/unraid-migration-map.md + USB Docker_Containers.md.",
+    "status": "reference",
     "rollout_stufe": null,
-    "consensus": "claude",
-    "source_path": "claude/unraid/claude_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "deepseek",
-    "title": "mTLS-Services: kein Geoblock/Rate-Limit",
-    "content": "Bei require_and_verify client_auth scheitern Bots am TLS-Handshake — wan_geoblock und wan_ratelimit auf mTLS-Gateways überflüssig und falsch.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "deepseek",
-    "source_path": "deepseek/unraid/deepseek_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "deepseek",
-    "title": "Jellyfin LAN: direkte IP statt Subdomain",
-    "content": "Fire-TV im LAN nutzt 192.168.2.250:8096 direkt. Caddy jellyfin.m7c5.de nur für WAN mit Geoblock 300req/min + Streaming flush_interval -1.",
-    "status": "accepted",
-    "rollout_stufe": 6,
-    "consensus": "deepseek",
-    "source_path": "deepseek/unraid/deepseek_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "deepseek",
-    "title": "Host-Ports schließen — nur Caddy :443",
-    "content": "Alle Container-Host-Port-Mappings entfernen, Upstreams nur über media-network Namen. Nix-Äquivalent: 127.0.0.1 + systemd, kein 172.18.0.1 in reverse_proxy.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "deepseek",
-    "source_path": "deepseek/unraid/deepseek_answers.md"
-  },
-  {
-    "theme": "unraid",
-    "agent": "deepseek",
-    "title": "SABnzbd WireGuard-Volume beachten",
-    "content": "Unraid: /etc/wireguard ↔ /mnt/user/appdata/sabnzbd/wireguard/. Bei Nix-Migration VPN-Config + Kill-Switch (privado-vpn) vor Cutover testen.",
-    "status": "accepted",
-    "rollout_stufe": 6,
-    "consensus": "deepseek",
+    "consensus": "all",
     "source_path": "neuesmaterialfuergrok/*/unraid/Docker_Containers.md"
   },
   {
     "theme": "unraid",
-    "agent": "deepseek",
-    "title": "common.caddy ohne (common) Snippet-Name",
-    "content": "Header-Snippet muss (common_headers) heißen und importiert werden — sonst greifen Security-Header nirgends. Nix: lib/caddy-snippets.nix als SSoT.",
-    "status": "accepted",
-    "rollout_stufe": 5,
-    "consensus": "deepseek+grok",
-    "source_path": "deepseek/unraid/deepseek_answers.md"
+    "agent": "consensus",
+    "title": "[Vorlage] Appdata → q958 Storage-Tiers",
+    "content": "docker_and_vm/appdata→Tier A /var/lib. user/data/media→Tier C. downloadcache→Tier B. Kein Nix-Code daraus ableiten ohne Abgleich machines/q958/storage.nix.",
+    "status": "reference",
+    "rollout_stufe": null,
+    "consensus": "all",
+    "source_path": "neuesmaterialfuergrok/*/unraid/Overview.md"
+  },
+  {
+    "theme": "unraid",
+    "agent": "claude",
+    "title": "[Vorlage] Jellyfin Marker beim Appdata-Kopieren",
+    "content": "LSIO=.jellyfin-config vs official=.jellyfin-data. Pitfall wenn Unraid-Appdata nach q958 kopiert wird — nicht Caddy-Thema.",
+    "status": "reference",
+    "rollout_stufe": 6,
+    "consensus": "claude",
+    "source_path": "claude/unraid/claude_answers.md"
   }
 ]
