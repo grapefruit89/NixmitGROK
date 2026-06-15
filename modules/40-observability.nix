@@ -523,8 +523,7 @@ in
 
       services.crowdsec-firewall-bouncer = {
         enable = true;
-        registerBouncer.enable = false;
-        secrets.apiKeyPath = "/var/lib/secrets/crowdsec_bouncer_key";
+        registerBouncer.enable = true;
         settings = {
           api_url = "http://127.0.0.1:8080/";
           mode = "nftables";

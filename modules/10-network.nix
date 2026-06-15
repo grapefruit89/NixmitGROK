@@ -441,19 +441,14 @@ in
         }];
       };
 
-      systemd.services.wg-quick-privado = {
-        serviceConfig = {
-          Restart = "always";
-          RestartSec = "5s";
-        };
-      };
+
     })
 
     # ── POCKETID IDENTITY PROVIDER ────────────────────────────────────────────
     (lib.mkIf config.my.services.pocket-id.enable {
       systemd.services.pocket-id = {
         after = [ "postgresql.service" "network-online.target" ];
-        wants = [ "postgresql.service" ];
+        wants = [ "postgresql.service" "network-online.target" ];
       };
 
       services.pocket-id = {

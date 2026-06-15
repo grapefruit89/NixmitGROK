@@ -30,6 +30,14 @@ in
     }
   ];
 
+  # singleDisk ohne Tier B/C: Media-Pfade als Stub (bis NIXDATA/NIXMEDIA da sind)
+  systemd.tmpfiles.rules = lib.mkIf s.singleDisk [
+    "d /data/media 0775 root media -"
+    "d /data/downloads 0775 root media -"
+    "d /mnt/fast_pool/cache/jellyfin 0775 jellyfin media -"
+    "d /mnt/fast_pool/metadata/jellyfin 0775 jellyfin media -"
+  ];
+
   my.services.storage-automount = {
     singleDisk = s.singleDisk;
     tierADevice = s.tierA.device;

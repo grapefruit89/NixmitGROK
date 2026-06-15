@@ -37,6 +37,27 @@ in
     lib.mkForce [ p.network.sshPort ]
   );
 
+  # Headless-Dev: rebuild ohne interaktives sudo (Grok-Agent / Notfall-User)
+  security.sudo.extraRules = [
+    {
+      users = [ emergency.name ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/nixos-rebuild";
+          options = [ "NOPASSWD" "SETENV" ];
+        }
+        {
+          command = "/home/nixos/tools/rebuild-q958.sh";
+          options = [ "NOPASSWD" "SETENV" ];
+        }
+        {
+          command = "/etc/nixos/tools/rebuild-q958.sh";
+          options = [ "NOPASSWD" "SETENV" ];
+        }
+      ];
+    }
+  ];
+
   assertions = [
     {
       assertion = lib.hasAttr emergency.name config.users.users;
