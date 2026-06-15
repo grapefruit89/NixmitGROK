@@ -66,9 +66,10 @@ Nix-Dateien bleiben autoritativ; diese Notiz ist die menschliche Destillation.
 | Blocky before Caddy | ✓ `10-network.nix` + `60-apps/default.nix` |
 | Gatus blocky-dns | ✓ Gruppe `critical` |
 | Tailscale MagicDNS | ✓ `--accept-dns=false` |
-| LAN Jellyfin ohne SSO | offen (Phase 2) |
+| Jellyfin Client-Split (X-Emby-Authorization) | ✓ `jellyfin.nix` |
 | Cloudflare trusted_proxies | offen (WAN/CF) |
-| nftables Geo | Stufe 8 |
+| nftables Geo (nur L4) | ✓ `15-firewall.nix` überarbeitet, Stufe 8 aktivieren |
+| Blocky LAN-DNS | ✓ DHCP → q958, Firewall UDP/53 Stufe 8 |
 
 ---
 

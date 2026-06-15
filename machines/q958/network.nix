@@ -3,6 +3,7 @@
 
 let
   p = import ./profile.nix;
+  lan = p.network.lan;
   secretsDir = p.secrets.dir;
   secretPath = name: "${secretsDir}/${p.secrets.files.${name}}";
 in
@@ -16,7 +17,21 @@ in
   my.services = {
     blocky.upstreamDns = p.network.blocky.upstream;
     pocket-id.secretsFile = secretPath "pocketId";
-    privado-vpn.privateKeyFile = secretPath "privadoKey";
+    privado-vpn = {
+      privateKeyFile = secretPath "privadoKey";
+      ipAddress = p.network.privado.address;
+      publicKey = p.network.privado.publicKey;
+      endpoint = p.network.privado.endpoint;
+      dns = p.network.privado.dns;
+    };
+  };
+
+  # Blocky-DNS fürs LAN — nur auf eno1, nicht WAN-weit (vor nftables Stufe 8)
+  networking.firewall.interfaces.${lan.interface} = lib.mkIf (
+    config.my.services.blocky.enable && !config.my.security.firewall.enable
+  ) {
+    allowedUDPPorts = [ 53 ];
+    allowedTCPPorts = [ 53 ];
   };
 
   networking.firewall.allowedUDPPorts = lib.mkIf (

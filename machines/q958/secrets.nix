@@ -3,8 +3,11 @@
 
 let
   p = import ./profile.nix;
+  local =
+    if builtins.pathExists ./profile.local.nix then import ./profile.local.nix else { };
   secretsDir = p.secrets.dir;
   dk = p.secrets.devKeys;
+  privadoKey = local.secrets.privado.privateKey or "";
   moritz = (import ../../users/moritz/profile.nix).name;
 
   provisionScript = pkgs.writeShellScript "q958-secrets-provision" ''
@@ -58,6 +61,12 @@ let
 #   2) In profile.nix: secrets.devKeys.context7.apiKey = "…"; dann rebuild
 CTX7EOF
       chmod 600 ${secretsDir}/${p.secrets.files.context7}
+    fi
+
+    # Privado WG — nur aus profile.local.nix (gitignored), nie ins Repo
+    if [ -n "${privadoKey}" ]; then
+      printf '%s' "${privadoKey}" > ${secretsDir}/${p.secrets.files.privadoKey}
+      chmod 600 ${secretsDir}/${p.secrets.files.privadoKey}
     fi
 
     # Grok: System-Secret → User-Home wenn Key in context7.env steht

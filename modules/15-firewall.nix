@@ -2,45 +2,64 @@
 # ==============================================================================
 # PURPOSE
 # ==============================================================================
-# Configures a pure, hardened nftables firewall for the homelab server.
-# Completely disables legacy iptables/networking.firewall and implements
-# kernel-level SYN-flood protection, ICMP throttling, web-port rate limiting,
-# SSH brute force prevention, and automated weekly Geo-IP blocking.
+# Reine nftables-L4-Firewall: Geo, Rate-Limits, SYN-Schutz, CrowdSec-Sets.
+# Geo/ASN NIEMALS in Caddy — eine Wahrheit hier im Kernel.
+#
+# Hinweis Cloudflare orange cloud: saddr = CF-Edge-IP → L4-Geo wirkungslos.
+# Für Geo entweder DNS-only (graue Wolke) oder CF Firewall Rules am Edge.
 
 { config, pkgs, lib, ... }:
 
 let
   cfg = config.my.security.firewall;
   sshPort = config.my.ports.ssh;
-  sshPorts = (if config.my.mode == "development" then [ 22 ] else [ sshPort ]) ++ (lib.optional ((config.my.security ? dropbear-rescue) && config.my.security.dropbear-rescue.enable) config.my.security.dropbear-rescue.port);
+  lanIP = config.my.configs.server.lanIP;
+  sshPorts =
+    (if config.my.mode == "development" then [ 22 ] else [ sshPort ])
+    ++ lib.optional (
+      (config.my.security ? dropbear-rescue) && config.my.security.dropbear-rescue.enable
+    ) config.my.security.dropbear-rescue.port;
+
+  lanCidrList = lib.concatStringsSep ", " cfg.lanCidrs;
+  blockedCountryList = lib.concatStringsSep " " cfg.blockedCountries;
 
 in
 {
-  # ============================================================================
-  # OPTIONS
-  # ============================================================================
   options.my.security.firewall = {
-    enable = lib.mkEnableOption "Pure, hardened nftables firewall stack (disables legacy iptables)";
+    enable = lib.mkEnableOption "nftables L4 firewall (ersetzt networking.firewall)";
+
+    lanCidrs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "192.168.0.0/16" "10.0.0.0/8" "172.16.0.0/12" ];
+      description = "Vertrauenswürdige LAN-CIDRs — vor Geo-Block akzeptiert.";
+    };
+
     blockedCountries = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ "cn" "ru" "kp" "ir" "sy" "vn" ];
-      description = "List of ISO country codes to block on Layer 3/4.";
+      description = "ISO-Ländercodes für ipdeny.com → geoip_blocked Set (Blocklist).";
+    };
+
+    allowLanDns = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "UDP/TCP 53 von LAN an Blocky erlauben (DHCP DNS → q958).";
+    };
+
+    webRateLimit = lib.mkOption {
+      type = lib.types.str;
+      default = "100/minute";
+      description = "Neue HTTP/HTTPS-Verbindungen pro Quell-IP (WAN).";
     };
   };
 
-  # ============================================================================
-  # CONFIG
-  # ============================================================================
   config = lib.mkIf cfg.enable {
-    # ── DISABLE LEGACY IPTABLES ───────────────────────────────────────────────
     networking.firewall.enable = false;
 
-    # ── ENABLE NATIVE NFTABLES ────────────────────────────────────────────────
     networking.nftables = {
       enable = true;
       ruleset = ''
         table inet filter {
-          # Dynamic set to store blocked Geo-IP ranges (subnets/CIDR require flags interval)
           set geoip_blocked {
             type ipv4_addr
             flags interval
@@ -56,14 +75,12 @@ in
             flags interval
           }
 
-          # Dynamic set to track and rate limit new SSH connections
           set ssh_meter {
             type ipv4_addr
             flags dynamic, timeout
             timeout 1m
           }
 
-          # Dynamic set to track and rate limit new HTTP/HTTPS connections
           set web_meter {
             type ipv4_addr
             flags dynamic, timeout
@@ -73,51 +90,52 @@ in
           chain input {
             type filter hook input priority filter; policy drop;
 
-            # 1. Loopback and trusted VPN interfaces
+            # Trusted paths (vor Geo/Rate)
             iifname lo accept
-            iifname tailscale0 accept comment "Accept Tailscale VPN traffic"
-            iifname privado accept comment "Accept Privado VPN client traffic"
+            iifname tailscale0 accept comment "Tailscale"
+            iifname privado accept comment "Privado WG egress"
 
-            # 2. Connection tracking states (allow established/related)
             ct state established,related accept
-            ct state invalid drop comment "Drop invalid TCP states"
+            ct state invalid drop comment "Invalid TCP state"
 
-            # 3. Block fragmented packets
-            ip frag-off & 0x3fff != 0 drop comment "Drop fragmented packets"
+            ip frag-off & 0x3fff != 0 drop comment "Fragments"
 
-            # 4. Geo-IP and CrowdSec drop rules (processed early)
-            ip saddr @geoip_blocked drop comment "Drop blocked Geo-IP traffic"
-            ip saddr @crowdsec_blocked_ipv4 drop comment "Drop CrowdSec banned IPv4"
-            ip6 saddr @crowdsec_blocked_ipv6 drop comment "Drop CrowdSec banned IPv6"
+            # LAN: voller Zugang (Apps, Jellyfin, Blocky-DNS) — kein Geo
+            ip saddr { ${lanCidrList} } accept comment "LAN trusted"
 
-            # 5. ICMP (Ping) throttling and safety rules
-            ip protocol icmp icmp type echo-request limit rate over 10/second drop
-            ip protocol icmp icmp type echo-request accept
-            ip protocol icmp icmp type { redirect, router-advertisement } drop
-            ip protocol icmp accept comment "Accept other safe ICMP types"
+            # WAN: Geo-Block (nur öffentliche IPs, LAN bereits oben)
+            ip saddr @geoip_blocked drop comment "Geo blocklist"
 
-            # 6. TCP SYN DDoS protection (SYN Flood limiting)
-            tcp flags & (syn|rst|ack) == syn limit rate over 20/second burst 40 packets drop comment "SYN-Flood protection"
+            ip saddr @crowdsec_blocked_ipv4 drop comment "CrowdSec IPv4"
+            ip6 saddr @crowdsec_blocked_ipv6 drop comment "CrowdSec IPv6"
 
-            # 7. Tailscale UDP handshake port acceptance
-            udp dport ${toString config.my.services.tailscale.port} accept comment "Allow Tailscale UDP handshake"
+            icmp type echo-request limit rate over 10/second drop
+            icmp type echo-request accept
+            icmp type { redirect, router-advertisement } drop
+            ip protocol icmp accept
 
-            # 8. HTTP/HTTPS rate-limiting and access (Ports 80 & 443)
-            tcp dport { 80, 443 } ct state new update @web_meter { ip saddr limit rate over 100/minute } drop
+            tcp flags & (syn|rst|ack) == syn limit rate over 20/second burst 40 packets drop comment "SYN flood"
+
+            udp dport ${toString config.my.services.tailscale.port} accept comment "Tailscale UDP"
+
+            ${lib.optionalString cfg.allowLanDns ''
+            udp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN"
+            tcp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN TCP"
+            ''}
+
+            tcp dport { 80, 443 } ct state new update @web_meter { ip saddr limit rate over ${cfg.webRateLimit} } drop
             tcp dport { 80, 443 } accept
 
-            # 9. SSH rate-limiting and access
             tcp dport { ${lib.concatStringsSep ", " (map toString sshPorts)} } ct state new update @ssh_meter { ip saddr limit rate over 10/minute } drop
             tcp dport { ${lib.concatStringsSep ", " (map toString sshPorts)} } accept
 
-            # 10. Log all other dropped packets (rate limited)
             limit rate 5/second log prefix "nftables-dropped: "
           }
 
           chain forward {
             type filter hook forward priority filter; policy drop;
-            iifname "tailscale0" accept comment "Allow Tailscale subnet routing (inbound)"
-            oifname "tailscale0" accept comment "Allow Tailscale subnet routing (outbound)"
+            iifname tailscale0 accept
+            oifname tailscale0 accept
           }
 
           chain output {
@@ -127,56 +145,38 @@ in
       '';
     };
 
-    # ── GEO-IP AUTOMATED WEEKLY DOWNLOAD ──────────────────────────────────────
     systemd.services.nftables-geoip-update = {
-      description = "Download and update Geo-IP country IP blocks in nftables";
-      after = [ "network-online.target" ];
+      description = "Geo-IP blocklist → nftables set geoip_blocked";
+      after = [ "network-online.target" "nftables.service" ];
       wants = [ "network-online.target" ];
-
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "update-geoip" ''
           set -euo pipefail
-          
           TEMP_DIR=$(mktemp -d)
           trap 'rm -rf "$TEMP_DIR"' EXIT
-
           IP_FILE="$TEMP_DIR/ips.txt"
           touch "$IP_FILE"
-
-          echo "Starting Geo-IP list downloads..."
-          for country in ${lib.concatStringsSep " " cfg.blockedCountries}; do
+          for country in ${blockedCountryList}; do
             URL="https://www.ipdeny.com/ipblocks/data/countries/$country.zone"
-            echo "Downloading $country IP block list..."
-            if ${pkgs.curl}/bin/curl --ssl-reqd -fsS -o "$TEMP_DIR/$country.zone" "$URL"; then
-              cat "$TEMP_DIR/$country.zone" >> "$IP_FILE"
-            else
-              echo "Warning: Failed to fetch zone file for $country. Skipping."
-            fi
+            echo "Fetching $country..."
+            ${pkgs.curl}/bin/curl --ssl-reqd -fsS -o "$TEMP_DIR/$country.zone" "$URL" \
+              && cat "$TEMP_DIR/$country.zone" >> "$IP_FILE" \
+              || echo "WARN: skip $country"
           done
-
-          # Filter out empty lines or comments
           ${pkgs.gnugrep}/bin/grep -v -E '^\s*(#|$)' "$IP_FILE" > "$TEMP_DIR/clean_ips.txt" || true
-
-          if [ -s "$TEMP_DIR/clean_ips.txt" ]; then
-            NFT_FILE="$TEMP_DIR/rules.nft"
-            echo "flush set inet filter geoip_blocked" > "$NFT_FILE"
-            echo "add element inet filter geoip_blocked {" >> "$NFT_FILE"
-            
-            # Format elements comma-separated
-            paste -sd, "$TEMP_DIR/clean_ips.txt" >> "$NFT_FILE"
-            echo "}" >> "$NFT_FILE"
-
-            echo "Atomically updating nftables Geo-IP blocked set..."
-            ${pkgs.nftables}/bin/nft -f "$NFT_FILE"
-            echo "Geo-IP update finished successfully."
-          else
-            echo "Error: No Geo-IP subnets downloaded. Keeping existing list."
+          if [ ! -s "$TEMP_DIR/clean_ips.txt" ]; then
+            echo "ERROR: no subnets fetched"
             exit 1
           fi
+          NFT_FILE="$TEMP_DIR/rules.nft"
+          echo "flush set inet filter geoip_blocked" > "$NFT_FILE"
+          echo "add element inet filter geoip_blocked {" >> "$NFT_FILE"
+          paste -sd, "$TEMP_DIR/clean_ips.txt" >> "$NFT_FILE"
+          echo "}" >> "$NFT_FILE"
+          ${pkgs.nftables}/bin/nft -f "$NFT_FILE"
+          echo "geoip_blocked updated ($(wc -l < "$TEMP_DIR/clean_ips.txt") prefixes)"
         '';
-
-        # Hardening sandboxing properties for systemd service
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
@@ -185,9 +185,8 @@ in
       };
     };
 
-    # Timer to trigger Geo-IP update weekly (and 5 mins after boot)
     systemd.timers.nftables-geoip-update = {
-      description = "Weekly timer for Geo-IP blocklist update";
+      description = "Weekly Geo-IP refresh";
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnBootSec = "5min";

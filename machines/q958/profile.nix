@@ -10,6 +10,7 @@ let
         {
           access.emergency = { };
           secrets.devKeys = { };
+          secrets.privado = { };
         };
 in
 {
@@ -44,6 +45,12 @@ in
     sshPort = 22;
     blocky = {
       upstream = [ "1.1.1.1" "8.8.8.8" ];
+    };
+    privado = {
+      endpoint = "81.171.74.7:51820";
+      publicKey = "KgTUh3KLijVluDvNpzDCJJfrJ7EyLzYLmdHCksG4sRg=";
+      address = "100.64.58.237/32";
+      dns = [ "198.18.0.1" "198.18.0.2" ];
     };
     dns = {
       doh = [ "https://dns.cloudflare.com/dns-query" ];

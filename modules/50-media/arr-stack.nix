@@ -44,8 +44,9 @@ in
       name = "prowlarr";
       port = ports.prowlarr;
       dataDir = "/var/lib/prowlarr";
-      uid = 969; # custom default UID for prowlarr
-      gid = 969; # custom default GID for prowlarr
+      uid = 969;
+      gid = 969;
+      vpnKillSwitch = true;
     }))
   ];
 }

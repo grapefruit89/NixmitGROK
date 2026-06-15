@@ -2,7 +2,7 @@
 
 ## Was passiert ist
 
-Das erste Repo (`grapefruit89/Nix-Grok`, Commit `d524580`) enthielt fälschlich:
+Das alte Repo (`grapefruit89/Nix-Grok`, Commit `d524580`) enthielt fälschlich:
 
 - Notfall-`passwordHash` für User `nixos`
 - `secrets.devKeys` mit Dev-Platzhaltern
@@ -27,7 +27,7 @@ cp machines/q958/profile.local.nix.example machines/q958/profile.local.nix
 1. **Notfall-Passwort `nixos`** — neu setzen (`mkpasswd -m sha-512`)
 2. **Alle Dev-Keys** neu generieren (nicht `q958-dev-*` wiederverwenden)
 3. Pocket-ID: bei Encryption-Key-Wechsel ggf. DB reset
-4. GitHub: altes Repo **private** oder **delete**, neues Repo anlegen
+4. GitHub: altes Repo **private** oder **delete**; aktuelles Repo: **`grapefruit89/NixmitGROK`**
 
 ## .gitignore-Regeln
 

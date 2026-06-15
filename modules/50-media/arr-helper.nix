@@ -3,8 +3,14 @@
 # Shared helper to generate standardized *Arr services.
 { config, lib, ... }:
 
+let
+  vpnKillSwitch = import ../../lib/vpn-killswitch.nix {
+    inherit lib;
+    privadoEnabled = config.my.services.privado-vpn.enable or false;
+  };
+in
 {
-  mkArrService = { name, port, dataDir, uid, gid }: {
+  mkArrService = { name, port, dataDir, uid, gid, vpnKillSwitch ? false }: {
     services.${name} = {
       enable = true;
       openFirewall = false;
@@ -21,19 +27,24 @@
       extraGroups = [ "media" ];
     };
 
-    systemd.services.${name}.serviceConfig = {
-      ProtectSystem = lib.mkForce "strict";
-      ProtectHome = lib.mkForce true;
-      PrivateTmp = lib.mkForce true;
-      PrivateDevices = lib.mkForce true;
-      NoNewPrivileges = lib.mkForce true;
-      UMask = lib.mkForce "0002";
-      ReadWritePaths = [
-        dataDir
-        "/data/media"
-        "/data/downloads"
-      ];
-    };
+    systemd.services.${name} = lib.mkMerge [
+      (lib.mkIf vpnKillSwitch vpnKillSwitch)
+      {
+        serviceConfig = {
+          ProtectSystem = lib.mkForce "strict";
+          ProtectHome = lib.mkForce true;
+          PrivateTmp = lib.mkForce true;
+          PrivateDevices = lib.mkForce true;
+          NoNewPrivileges = lib.mkForce true;
+          UMask = lib.mkForce "0002";
+          ReadWritePaths = [
+            dataDir
+            "/data/media"
+            "/data/downloads"
+          ];
+        };
+      }
+    ];
 
     services.caddy.virtualHosts."${name}.${config.my.configs.identity.domain}" = {
       extraConfig = ''

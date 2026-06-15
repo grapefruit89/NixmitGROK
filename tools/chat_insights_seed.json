@@ -73,8 +73,8 @@
     "theme": "homelab_server",
     "agent": "grok",
     "title": "Geo/ASN eine Wahrheit — L4 nftables",
-    "content": "Geo komplett in nftables/ipset (Kernel), Caddy-Geoblock streichen. Zwei Wahrheiten (L4+L7) erschweren Debugging; Fail2ban sieht nft-Drops nicht in Caddy-Logs.",
-    "status": "proposed",
+    "content": "Geo NUR in nftables (15-firewall.nix). Caddy: kein maxmind, kein wan_geoblock. LAN-CIDR vor Geo-Set. CF orange cloud = L4 blind.",
+    "status": "accepted",
     "rollout_stufe": 8,
     "consensus": "grok",
     "source_path": "grok/homelab_server/grok_answers.md"
@@ -138,6 +138,26 @@
     "rollout_stufe": null,
     "consensus": "claude",
     "source_path": "claude/homelab_server/claude_answers.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "user_meta",
+    "title": "Jellyfin Client-Split — X-Emby-Authorization",
+    "content": "Apps senden X-Emby-Authorization MediaBrowser Client=… → kein forward_auth. Browser ohne Header → sso_auth. Zuverlässiger als User-Agent (Fire TV). VPN nur SABnzbd+Prowlarr, nicht Sonarr/Radarr.",
+    "status": "accepted",
+    "rollout_stufe": 5,
+    "consensus": "user_meta",
+    "source_path": "docs/ROADMAP.md"
+  },
+  {
+    "theme": "homelab_server",
+    "agent": "consensus",
+    "title": "Blocky = LAN-DNS + Adblock, nftables = Geo",
+    "content": "Blocky: DHCP DNS 192.168.2.73, Filtering+Rewrites für alle LAN-Geräte. nftables: kein Adblock, nur L4 Geo/Rate/SYN. Rollen nicht vermischen.",
+    "status": "accepted",
+    "rollout_stufe": 8,
+    "consensus": "all",
+    "source_path": "docs/ROADMAP.md"
   },
   {
     "theme": "homelab_server",

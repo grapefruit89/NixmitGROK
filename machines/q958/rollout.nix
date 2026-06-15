@@ -56,7 +56,7 @@ in
     blocky.enable = erstAb 2;
     tailscale.enable = erstAb 2;
     pocket-id.enable = erstAb 2; # /var/lib/secrets/pocket-id.env (secrets-provision)
-    privado-vpn.enable = lib.mkForce false; # privado_private_key manuell vom Provider
+    privado-vpn.enable = erstAb 6; # Usenet: SABnzbd + Prowlarr — Key in profile.local.nix
 
     storage.enable =
       if p.storage.mergerfsEnable then erstAb 3 else lib.mkForce false;

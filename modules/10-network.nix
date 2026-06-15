@@ -153,10 +153,8 @@ in
 
           rewrites = [
             { domain = "nixhome.local"; answer = lanIP; }
+            { domain = "${domain}"; answer = lanIP; }
             { domain = "*.${domain}"; answer = lanIP; }
-            { domain = "*.nix.${domain}"; answer = lanIP; }
-            { domain = "auth.${domain}"; answer = lanIP; }
-            { domain = "netdata.${domain}"; answer = lanIP; }
           ];
 
           clients.persistent = [
@@ -304,10 +302,7 @@ in
             mapping = {
               "nixhome.local" = lanIP;
               "${domain}" = lanIP;
-              "nix.${domain}" = lanIP;
-              "auth.${domain}" = lanIP;
-              "dns.${domain}" = lanIP;
-              "netdata.${domain}" = lanIP;
+              "*.${domain}" = lanIP;
             };
           };
         };
@@ -413,16 +408,38 @@ in
     (lib.mkIf config.my.services.privado-vpn.enable {
 
 
-      networking.wg-quick.interfaces.privado = {
+      networking.wg-quick.interfaces.privado = let
+        ip = pkgs.iproute2;
+        vpnTable = "51820";
+        # Prowlarr 969, SABnzbd 984 — nur diese UIDs über privado (Split-Tunnel)
+        vpnUids = [ 969 984 ];
+        uidRules = lib.concatMapStringsSep "\n" (uid:
+          "${ip}/bin/ip rule add uidrange ${toString uid}-${toString uid} lookup ${vpnTable} priority 9${toString uid}"
+        ) vpnUids;
+        uidRulesDown = lib.concatMapStringsSep "\n" (uid:
+          "${ip}/bin/ip rule del uidrange ${toString uid}-${toString uid} lookup ${vpnTable} priority 9${toString uid} || true"
+        ) vpnUids;
+      in {
         autostart = true;
         address = [ config.my.services.privado-vpn.ipAddress ];
         dns = config.my.services.privado-vpn.dns;
         privateKeyFile = config.my.services.privado-vpn.privateKeyFile;
+        table = "off";
+
+        postUp = ''
+          ${ip}/bin/ip route add default dev privado table ${vpnTable}
+          ${uidRules}
+        '';
+        preDown = ''
+          ${uidRulesDown}
+          ${ip}/bin/ip route flush table ${vpnTable} || true
+        '';
 
         peers = [{
           publicKey = config.my.services.privado-vpn.publicKey;
           endpoint = config.my.services.privado-vpn.endpoint;
           allowedIPs = [ "0.0.0.0/0" ];
+          persistentKeepalive = 25;
         }];
       };
 

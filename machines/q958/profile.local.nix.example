@@ -23,5 +23,8 @@
         scenenzbs.apiKey = "CHANGE_ME";
       };
     };
+    privado = {
+      privateKey = ""; # WireGuard PrivateKey — leer = VPN ohne Key
+    };
   };
 }

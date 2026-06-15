@@ -95,15 +95,34 @@ in
         intel-gpu-tools # intel_gpu_top
       ];
 
-      # Caddy Reverse Proxy Mapping
+      # Client-Split: Jellyfin-Apps senden X-Emby-Authorization (MediaBrowser Client=…).
+      # Browser (kein Emby-Header beim ersten Load) → Pocket-ID forward_auth.
+      # WAN-Schutz zusätzlich: nftables Geo (Stufe 8).
       services.caddy.virtualHosts."jellyfin.${domain}" = {
         extraConfig = ''
           import streamer_headers
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString portJellyfin} {
-            flush_interval -1
-            transport http {
-              read_buffer 0
+          import security_headers
+
+          @jellyfin_client header_regexp X-Emby-Authorization (?i)MediaBrowser
+
+          handle @jellyfin_client {
+            reverse_proxy 127.0.0.1:${toString portJellyfin} {
+              flush_interval -1
+              transport http {
+                read_buffer 0
+                keepalive off
+              }
+            }
+          }
+
+          handle {
+            import sso_auth
+            reverse_proxy 127.0.0.1:${toString portJellyfin} {
+              flush_interval -1
+              transport http {
+                read_buffer 0
+                keepalive off
+              }
             }
           }
         '';
