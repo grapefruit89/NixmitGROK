@@ -22,6 +22,7 @@ let
   portAdguard = config.my.ports.adguard;
   portValkey = config.my.ports.valkey;
 
+  caddy = import ../lib/caddy-helpers.nix { inherit lib; };
   caddySnippets = import ../lib/caddy-snippets.nix {
     inherit lib;
     pocketIdPort =
@@ -169,10 +170,7 @@ in
       };
 
       services.caddy.virtualHosts."dns.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString portAdguard}
-        '';
+        extraConfig = caddy.proxySso portAdguard;
       };
 
       systemd.services.AdGuardHome.serviceConfig = {
@@ -499,10 +497,7 @@ in
       ];
 
       services.caddy.virtualHosts."auth.${domain}" = {
-        extraConfig = ''
-          import security_headers
-          reverse_proxy 127.0.0.1:${toString config.my.services.pocket-id.port}
-        '';
+        extraConfig = caddy.proxySecurity config.my.services.pocket-id.port;
       };
     })
 

@@ -9,6 +9,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  caddy = import ../lib/caddy-helpers.nix { inherit lib; };
   cfgForgejo = config.my.services.forgejo;
   cfgSemaphore = config.my.services.semaphore;
   cfgCockpit = config.my.services.cockpit;
@@ -83,10 +84,7 @@ in
       };
 
       services.caddy.virtualHosts."git.${domain}" = {
-        extraConfig = ''
-          import security_headers
-          reverse_proxy 127.0.0.1:${toString cfgForgejo.port}
-        '';
+        extraConfig = caddy.proxySecurity cfgForgejo.port;
       };
     })
 
@@ -114,10 +112,7 @@ in
       };
 
       services.caddy.virtualHosts."semaphore.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgSemaphore.port}
-        '';
+        extraConfig = caddy.proxySso cfgSemaphore.port;
       };
     })
 
@@ -131,18 +126,16 @@ in
 
         caddy.virtualHosts = {
           "admin.${domain}" = {
-            extraConfig = ''
-              import sso_auth
-              reverse_proxy 127.0.0.1:${toString cfgCockpit.port}
-            '';
+            extraConfig = caddy.proxySso cfgCockpit.port;
           };
 
           # ── SECURE INTEL AMT INGRESS (SSO POCKET-ID GATEKEEPER) ─────────────────
           "machines.${domain}" = lib.mkIf (cfgCockpit.exposeAmt && cfgCockpit.amtHost != "") {
-            extraConfig = ''
-              import sso_auth
-              reverse_proxy ${cfgCockpit.amtHost}:${toString cfgCockpit.amtPort}
-            '';
+            extraConfig = caddy.mkProxy {
+              port = cfgCockpit.amtPort;
+              host = cfgCockpit.amtHost;
+              imports = [ "sso_auth" ];
+            };
           };
         };
       };

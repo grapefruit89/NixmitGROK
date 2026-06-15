@@ -2,6 +2,7 @@
 { config, lib, ... }:
 
 let
+  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   cfgPaperless = config.my.services.paperless;
   cfgN8n = config.my.services.n8n;
   domain = config.my.configs.identity.domain;
@@ -43,10 +44,7 @@ in
       };
 
       services.caddy.virtualHosts."paperless.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgPaperless.port}
-        '';
+        extraConfig = caddy.proxySso cfgPaperless.port;
       };
     })
 
@@ -76,10 +74,7 @@ in
       };
 
       services.caddy.virtualHosts."n8n.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgN8n.port}
-        '';
+        extraConfig = caddy.proxySso cfgN8n.port;
       };
     })
   ];

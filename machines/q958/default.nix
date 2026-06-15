@@ -58,6 +58,12 @@ in
 
     ports.ssh = p.network.sshPort;
 
+    core.nix-tuning = {
+      maxJobs = p.nix.maxJobs;
+      cores = p.nix.cores;
+      daemonLowPriority = p.nix.daemonLowPriority;
+    };
+
     impermanence = {
       persistentDisk = p.storage.tierA.persist.disk;
       persistMountPoint = p.storage.tierA.persist.mountPoint;

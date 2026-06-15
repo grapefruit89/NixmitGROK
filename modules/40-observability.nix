@@ -10,6 +10,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  caddy = import ../lib/caddy-helpers.nix { inherit lib; };
   cfgGatus = config.my.services.gatus;
   cfgObs = config.my.observability;
   cfgCrowdsec = config.my.security.crowdsec;
@@ -258,11 +259,7 @@ in
         };
 
         caddy.virtualHosts."gatus.${domain}" = {
-          extraConfig = ''
-            import tailscale_admin
-            import sso_auth
-            reverse_proxy 127.0.0.1:${toString cfgGatus.port}
-          '';
+          extraConfig = caddy.proxyTailscaleSso cfgGatus.port;
         };
       };
 
@@ -418,11 +415,7 @@ in
         };
 
         caddy.virtualHosts."grafana.${domain}" = {
-          extraConfig = ''
-            import tailscale_admin
-            import sso_auth
-            reverse_proxy 127.0.0.1:${toString cfgObs.grafanaPort}
-          '';
+          extraConfig = caddy.proxyTailscaleSso cfgObs.grafanaPort;
         };
       };
 

@@ -191,11 +191,40 @@ Noch offen:
 
 ---
 
+## Morgen — DRINGEND: Domain + Cloudflare
+
+**Status: noch nicht korrekt eingestellt.** Code/Blocky-Rewrites sind vorbereitet (`nix.m7c5.de`), aber **DNS bei Cloudflare und Router fehlen**.
+
+Policy: **immer graue Wolke (DNS-only)** — kein Orange-Proxy (TOS + nftables-Geo blind).
+
+Checkliste Cloudflare Dashboard (`m7c5.de` Zone):
+
+- [ ] A-Record `nix.m7c5.de` → öffentliche WAN-IP (grau)
+- [ ] A-Record `*.nix.m7c5.de` → gleiche WAN-IP (Wildcard, grau)
+- [ ] Alle Subdomains **Proxy aus** (DNS only)
+- [ ] Kein Apex `m7c5.de` — erst wenn verfügbar; aktuell nur `nix.m7c5.de`
+- [ ] TTL sinnvoll (Auto oder 300s für ersten Test)
+- [ ] Von außen: `dig jellyfin.nix.m7c5.de` → WAN-IP (nicht CF-Edge wenn grau)
+
+Checkliste LAN (Fritzbox):
+
+- [ ] DHCP primärer DNS → `192.168.2.73` (Blocky auf q958)
+- [ ] Test LAN: `nslookup jellyfin.nix.m7c5.de` → `192.168.2.73` (Blocky-Rewrite)
+- [ ] Test WAN/LTE: gleicher Hostname → WAN-IP
+
+Nach DNS live:
+
+- [ ] Caddy ACME/TLS prüfen (`systemctl status caddy`, Zertifikat für `*.nix.m7c5.de`)
+- [ ] `auth.nix.m7c5.de` erreichbar (Pocket-ID)
+- [ ] Erst dann Jellyfin/Caddy-End-to-End testen
+
+---
+
 ## Nächste Schritte (Reihenfolge)
 
-1. [ ] `nixos-rebuild switch` — Jellyfin ohne SSO + Firewall-Module prüfen
-2. [ ] Jellyfin testen: Fire-TV `jellyfin.nix.m7c5.de` + Browser (Pocket-ID zuerst)
-3. [ ] Router DNS auf q958 (Blocky fürs LAN)
+1. [ ] **Morgen:** Cloudflare + Fritzbox-DNS (siehe oben) — **blockiert alles Domain-bezogene**
+2. [ ] `nixos-rebuild switch` — Jellyfin ohne SSO + Firewall-Module prüfen
+3. [ ] Jellyfin testen: Fire-TV `jellyfin.nix.m7c5.de` + Browser (Pocket-ID zuerst)
 4. [ ] Wenn WAN-Härtung: `rollout.stufe = 8` (nftables Geo — **nicht** Caddy)
 5. [ ] Forward-Auth-Cache (optional)
 6. [ ] Stufe 6 Media-Cutover

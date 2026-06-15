@@ -2,6 +2,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   cfgVaultwarden = config.my.services.vaultwarden;
   cfgHomepage = config.my.services.homepage;
   cfgFilebrowser = config.my.services.filebrowser;
@@ -425,10 +426,7 @@ in
       };
 
       services.caddy.virtualHosts."dashboard.${domain}" = {
-        extraConfig = ''
-          import security_headers
-          reverse_proxy 127.0.0.1:${toString portHomepage}
-        '';
+        extraConfig = caddy.proxySecurity portHomepage;
       };
     })
 
@@ -444,10 +442,7 @@ in
       };
 
       services.caddy.virtualHosts."files.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgFilebrowser.port}
-        '';
+        extraConfig = caddy.proxySso cfgFilebrowser.port;
       };
 
       systemd.services.filebrowser.serviceConfig = {
@@ -478,10 +473,7 @@ in
       };
 
       services.caddy.virtualHosts."links.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgLinkwarden.port}
-        '';
+        extraConfig = caddy.proxySso cfgLinkwarden.port;
       };
 
       systemd.services.linkwarden = {
@@ -518,10 +510,7 @@ in
       };
 
       services.caddy.virtualHosts."ai.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString cfgOpenWebui.port}
-        '';
+        extraConfig = caddy.proxySso cfgOpenWebui.port;
       };
 
       systemd.services.open-webui.serviceConfig = {

@@ -2,6 +2,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   cfgJellyfin = config.my.services.jellyfin;
   cfgJellyseerr = config.my.services.jellyseerr;
   domain = config.my.configs.identity.domain;
@@ -106,24 +107,12 @@ in
           @jellyfin_client header_regexp X-Emby-Authorization (?i)MediaBrowser
 
           handle @jellyfin_client {
-            reverse_proxy 127.0.0.1:${toString portJellyfin} {
-              flush_interval -1
-              transport http {
-                read_buffer 0
-                keepalive off
-              }
-            }
+            ${caddy.streamingBackend portJellyfin}
           }
 
           handle {
             import sso_auth
-            reverse_proxy 127.0.0.1:${toString portJellyfin} {
-              flush_interval -1
-              transport http {
-                read_buffer 0
-                keepalive off
-              }
-            }
+            ${caddy.streamingBackend portJellyfin}
           }
         '';
       };
@@ -147,10 +136,7 @@ in
       };
 
       services.caddy.virtualHosts."seerr.${domain}" = {
-        extraConfig = ''
-          import sso_auth
-          reverse_proxy 127.0.0.1:${toString portJellyseerr}
-        '';
+        extraConfig = caddy.proxySso portJellyseerr;
       };
     })
   ];

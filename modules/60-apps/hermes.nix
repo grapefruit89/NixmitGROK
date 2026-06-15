@@ -31,10 +31,10 @@ in
     };
 
     services.hermes-agent.container.enable = lib.mkIf cfg.containerMode true;
-    services.hermes-agent.container.backend = lib.mkIf cfg.containerMode "docker";
+    services.hermes-agent.container.backend = lib.mkIf cfg.containerMode "podman";
     services.hermes-agent.container.hostUsers = lib.mkIf cfg.containerMode [ identityUser ];
 
-    virtualisation.docker.enable = lib.mkIf cfg.containerMode true;
+    virtualisation.podman.enable = lib.mkIf cfg.containerMode true;
 
     # Secrets für Hermes (API-Keys) — Context7 optional aus /var/lib/secrets
     systemd.services.hermes-env-provision = {

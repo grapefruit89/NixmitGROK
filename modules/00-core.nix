@@ -27,6 +27,21 @@ in
     core = {
       boot-safeguard.enable = lib.mkEnableOption "Boot safeguard generation limits";
       nix-tuning.enable = lib.mkEnableOption "Nix store performance tuning and GC";
+      nix-tuning.maxJobs = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
+        default = null;
+        description = "Parallele Nix-Jobs (null = RAM-basiert). q958/i3-9100: 4.";
+      };
+      nix-tuning.cores = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
+        default = null;
+        description = "Kerne pro Job (0 = alle). null = RAM-basiert.";
+      };
+      nix-tuning.daemonLowPriority = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "true = nix-daemon idle (schont Dienste). false = volle Build-Power.";
+      };
       zram-swap.enable = lib.mkEnableOption "Aggressive komprimierter ZRAM RAM-swap";
     };
 
@@ -135,13 +150,14 @@ in
           # Negativ-Cache verkürzen
           narinfo-cache-negative-ttl = 0;
 
-          # Dynamisches Ressourcen-Management basierend auf RamGB
           max-jobs =
-            if isLowRam then lib.mkForce 1
+            if cfgNix.maxJobs != null then lib.mkForce cfgNix.maxJobs
+            else if isLowRam then lib.mkForce 1
             else if isMidRam then lib.mkForce 2
             else lib.mkDefault 4;
           cores =
-            if isLowRam then lib.mkForce 1
+            if cfgNix.cores != null then lib.mkForce cfgNix.cores
+            else if isLowRam then lib.mkForce 1
             else if isMidRam then lib.mkForce 2
             else lib.mkDefault 0;
 
@@ -154,10 +170,11 @@ in
           trusted-users = [ "root" config.my.configs.identity.user ];
         };
 
-        # CPU & I/O Prioritäten für Builds (verhindert Host-Freezes)
-        daemonCPUSchedPolicy = "idle";
-        daemonIOSchedClass = "idle";
-        daemonIOSchedPriority = 7;
+        daemonCPUSchedPolicy =
+          if cfgNix.daemonLowPriority then "idle" else "batch";
+        daemonIOSchedClass =
+          if cfgNix.daemonLowPriority then "idle" else "best-effort";
+        daemonIOSchedPriority = lib.mkIf cfgNix.daemonLowPriority 7;
 
         # Wöchentlicher automatischer GC
         gc = {

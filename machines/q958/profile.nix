@@ -1,9 +1,14 @@
 # Einzige Quelle für alle q958-Maschinenwerte. Keine User-Daten — die liegen unter users/.
 # Secrets + Notfall-Passwort: machines/q958/profile.local.nix (gitignored)
 let
+  localPath =
+    if builtins.pathExists ./profile.local.nix then ./profile.local.nix
+    else if builtins.pathExists /etc/nixos/machines/q958/profile.local.nix
+    then /etc/nixos/machines/q958/profile.local.nix
+    else null;
   local =
-    if builtins.pathExists ./profile.local.nix then
-      import ./profile.local.nix
+    if localPath != null then
+      import localPath
     else
       builtins.trace
         "WARNUNG: profile.local.nix fehlt — cp profile.local.nix.example profile.local.nix"
@@ -175,7 +180,14 @@ in
   };
 
   rollout = {
-    stufe = 5;
+    stufe = 8;
+  };
+
+  # i3-9100: 4 Kerne, 32 GB — 4 parallele Jobs, je 1 Kern (volle CPU, kein idle-daemon)
+  nix = {
+    maxJobs = 4;
+    cores = 1;
+    daemonLowPriority = false;
   };
 
   iot = {

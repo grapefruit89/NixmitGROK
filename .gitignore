@@ -65,4 +65,4 @@ stage-nixos/
 # Package build output
 # =============================================================================
 packages/*/result
-packages/*/node_modules/
+packages/*/node_modules/.nix-defexpr/

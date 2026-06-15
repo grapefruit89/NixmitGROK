@@ -2,6 +2,7 @@
 { config, lib, ... }:
 
 let
+  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   cfgSabnzbd = config.my.services.sabnzbd;
   domain = config.my.configs.identity.domain;
   portSabnzbd = config.my.ports.sabnzbd;
@@ -60,11 +61,7 @@ in
     ];
 
     services.caddy.virtualHosts."sabnzbd.${domain}" = {
-      extraConfig = ''
-        import tailscale_admin
-        import sso_auth
-        reverse_proxy 127.0.0.1:${toString portSabnzbd}
-      '';
+      extraConfig = caddy.proxyTailscaleSso portSabnzbd;
     };
   };
 }

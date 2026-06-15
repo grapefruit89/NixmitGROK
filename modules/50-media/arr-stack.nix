@@ -46,7 +46,7 @@ in
       dataDir = "/var/lib/prowlarr";
       uid = 969;
       gid = 969;
-      vpnKillSwitch = true;
+      useVpnKillSwitch = true;
     }))
   ];
 }

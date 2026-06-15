@@ -4,13 +4,14 @@
 { config, lib, ... }:
 
 let
-  vpnKillSwitch = import ../../lib/vpn-killswitch.nix {
+  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
+  vpnKillSwitchAttrs = import ../../lib/vpn-killswitch.nix {
     inherit lib;
     privadoEnabled = config.my.services.privado-vpn.enable or false;
   };
 in
 {
-  mkArrService = { name, port, dataDir, uid, gid, vpnKillSwitch ? false }: {
+  mkArrService = { name, port, dataDir, uid, gid, useVpnKillSwitch ? false }: {
     services.${name} = {
       enable = true;
       openFirewall = false;
@@ -28,7 +29,7 @@ in
     };
 
     systemd.services.${name} = lib.mkMerge [
-      (lib.mkIf vpnKillSwitch vpnKillSwitch)
+      (lib.mkIf useVpnKillSwitch vpnKillSwitchAttrs)
       {
         serviceConfig = {
           ProtectSystem = lib.mkForce "strict";
@@ -47,10 +48,7 @@ in
     ];
 
     services.caddy.virtualHosts."${name}.${config.my.configs.identity.domain}" = {
-      extraConfig = ''
-        import sso_auth
-        reverse_proxy 127.0.0.1:${toString port}
-      '';
+      extraConfig = caddy.proxySso port;
     };
   };
 }
