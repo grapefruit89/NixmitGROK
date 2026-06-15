@@ -43,7 +43,7 @@
     "theme": "homelab_server",
     "agent": "claude",
     "title": "Blocky vor Caddy + Watchdog",
-    "content": "Blocky-Tod zur Laufzeit bricht DNS-01 still. before=caddy, ACME bootstrap DNS, Gatus/Watchdog auf Blocky.",
+    "content": "Blocky-Tod zur Laufzeit bricht DNS-01 still. before=caddy, Restart=always, Gatus group critical. Tailscale --accept-dns=false.",
     "status": "accepted",
     "rollout_stufe": 5,
     "consensus": "claude",

@@ -57,6 +57,19 @@ Nix-Dateien bleiben autoritativ; diese Notiz ist die menschliche Destillation.
 - Caddy-Learnings aus Unraid-Chats sind in **homelab_server** konsolidiert (Tower v9.0)
 - Unraid = Inventar/Volumes, siehe `unraid-migration-map.md`
 
+### q958 Ist-Zustand (Caddy, Juni 2026)
+
+| Thema | Status |
+|-------|--------|
+| `sso_auth` + Keepalive | ✓ `lib/caddy-snippets.nix` |
+| Forward-Auth-Cache 5min | offen (Phase 4) |
+| Blocky before Caddy | ✓ `10-network.nix` + `60-apps/default.nix` |
+| Gatus blocky-dns | ✓ Gruppe `critical` |
+| Tailscale MagicDNS | ✓ `--accept-dns=false` |
+| LAN Jellyfin ohne SSO | offen (Phase 2) |
+| Cloudflare trusted_proxies | offen (WAN/CF) |
+| nftables Geo | Stufe 8 |
+
 ---
 
 ## Stufe 5 — Caddy

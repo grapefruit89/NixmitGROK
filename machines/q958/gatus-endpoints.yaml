@@ -15,8 +15,9 @@ endpoints:
     conditions:
       - "[CONNECTED] == true"
 
+  # critical: Blocky-Ausfall → ACME-Renewal und interne Auflösung brechen still
   - name: "blocky-dns"
-    group: "network"
+    group: "critical"
     url: "dns://cloudflare.com"
     interval: "1m"
     dns:

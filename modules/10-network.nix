@@ -315,7 +315,15 @@ in
 
       networking.nameservers = lib.mkForce [ "127.0.0.1" "1.1.1.1" ];
 
+      systemd.services.blocky = {
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
+        before = lib.mkIf config.services.caddy.enable [ "caddy.service" ];
+      };
+
       systemd.services.blocky.serviceConfig = {
+        Restart = lib.mkDefault "always";
+        RestartSec = lib.mkDefault "5s";
         ProtectSystem = lib.mkDefault "strict";
         ProtectHome = lib.mkDefault true;
         PrivateTmp = lib.mkDefault true;
@@ -358,7 +366,8 @@ in
         port = config.my.services.tailscale.port;
         permitCertUid = "caddy";
         useRoutingFeatures = "client";
-        extraUpFlags = [ "--ssh" "--accept-dns=true" "--accept-routes=true" ];
+        # DNS bleibt bei Blocky (127.0.0.1) — kein Tailscale MagicDNS in resolv.conf
+        extraUpFlags = [ "--ssh" "--accept-dns=false" "--accept-routes=true" ];
       };
       networking.firewall.trustedInterfaces = [ "tailscale0" ];
       networking.firewall.checkReversePath = "loose";
@@ -427,6 +436,11 @@ in
 
     # ── POCKETID IDENTITY PROVIDER ────────────────────────────────────────────
     (lib.mkIf config.my.services.pocket-id.enable {
+      systemd.services.pocket-id = {
+        after = [ "postgresql.service" "network-online.target" ];
+        wants = [ "postgresql.service" ];
+      };
+
       services.pocket-id = {
         enable = true;
         dataDir = config.my.services.pocket-id.dataDir;

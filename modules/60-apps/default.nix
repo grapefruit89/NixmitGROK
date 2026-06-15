@@ -111,6 +111,18 @@ in
 
   # Caddy .enable nur in machines/<host>/rollout.nix — hier nur Hardening
   config = lib.mkIf config.services.caddy.enable {
+    systemd.services.caddy = {
+      # Blocky → PostgreSQL → Caddy (ACME + forward_auth ohne Deadlock)
+      after = lib.mkAfter (
+        lib.optional config.my.services.blocky.enable "blocky.service"
+        ++ lib.optional config.my.services.pocket-id.enable "postgresql.service"
+        ++ [ "network-online.target" ]
+      );
+      wants =
+        lib.optional config.my.services.blocky.enable "blocky.service"
+        ++ [ "network-online.target" ];
+    };
+
     systemd.services.caddy.serviceConfig = {
       OOMScoreAdjust = lib.mkForce (-900);
       Restart = lib.mkForce "always";
