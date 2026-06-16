@@ -93,7 +93,7 @@ in
       enable = lib.mkEnableOption "Filebrowser Web File Manager";
       port = lib.mkOption { type = lib.types.port; default = config.my.ports.filebrowser; description = "Filebrowser port."; };
       rootPath = lib.mkOption { type = lib.types.str; default = "/mnt/documents"; description = "Root directory to serve."; };
-      databasePath = lib.mkOption { type = lib.types.str; default = "/data/state/filebrowser/filebrowser.db"; description = "Database file path."; };
+      databasePath = lib.mkOption { type = lib.types.str; default = "/var/lib/filebrowser/filebrowser.db"; description = "Database file path."; };
     };
 
     linkwarden = {

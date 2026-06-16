@@ -52,9 +52,9 @@ in
       upstream = [ "1.1.1.1" "8.8.8.8" ];
     };
     privado = {
-      endpoint = "81.171.74.7:51820";
+      endpoint = "91.148.245.70:51820";
       publicKey = "KgTUh3KLijVluDvNpzDCJJfrJ7EyLzYLmdHCksG4sRg=";
-      address = "100.64.58.237/32";
+      address = "100.64.8.117/32";
       dns = [ "198.18.0.1" "198.18.0.2" ];
     };
     dns = {
@@ -161,6 +161,7 @@ in
       pocketId = "pocket-id.env";
       context7 = "context7.env";
       privadoKey = "privado_private_key";
+      privadoEnv = "privado.env";
     };
 
     # Dev-Platzhalter: machines/q958/profile.local.nix (gitignored, rollout.stufe < 9)

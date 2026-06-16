@@ -22,7 +22,7 @@ in
           PAPERLESS_ALLOWED_HOSTS = "localhost,127.0.0.1,paperless.${domain}";
           PAPERLESS_TIME_ZONE = "Europe/Berlin";
           PAPERLESS_OCR_LANGUAGE = "deu+eng";
-          PAPERLESS_OCR_MODE = "clean";
+          PAPERLESS_OCR_MODE = "redo";
           PAPERLESS_OCR_OUTPUT_TYPE = "pdfa";
           PAPERLESS_TASK_WORKERS = "2";
           PAPERLESS_THREADS_PER_WORKER = "2";

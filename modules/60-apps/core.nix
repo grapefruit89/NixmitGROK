@@ -56,8 +56,8 @@ in
         };
       };
 
-      # Log-Ordner Bereitstellung
       systemd.tmpfiles.rules = [
+        "d /var/lib/vaultwarden 0750 vaultwarden vaultwarden -"
         "d /var/log/vaultwarden 0750 vaultwarden vaultwarden -"
       ];
 
@@ -79,6 +79,7 @@ in
 
       # Systemd Security Hardening
       systemd.services.vaultwarden.serviceConfig = {
+        StateDirectory = "vaultwarden";
         ProtectSystem = lib.mkForce "strict";
         ProtectHome = lib.mkForce true;
         PrivateTmp = lib.mkForce true;
@@ -99,7 +100,9 @@ in
           "/var/lib/vaultwarden"
           "/var/log/vaultwarden"
         ];
-        EnvironmentFile = lib.mkForce "/var/lib/secrets/vaultwarden.env";
+        # mkForce würde DATA_FOLDER aus dem NixOS-Modul entfernen → rsa_key.pem read-only
+        EnvironmentFile = "/var/lib/secrets/vaultwarden.env";
+        Environment = "DATA_FOLDER=/var/lib/vaultwarden";
       };
     })
 
@@ -441,6 +444,10 @@ in
         };
       };
 
+      systemd.tmpfiles.rules = [
+        "d /var/lib/filebrowser 0750 filebrowser filebrowser -"
+      ];
+
       services.caddy.virtualHosts."files.${domain}" = {
         extraConfig = caddy.proxySso cfgFilebrowser.port;
       };
@@ -457,6 +464,10 @@ in
         ProtectHostname = true;
         LockPersonality = true;
         RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        ReadWritePaths = [
+          "/var/lib/filebrowser"
+          cfgFilebrowser.rootPath
+        ];
       };
     })
 

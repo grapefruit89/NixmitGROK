@@ -420,7 +420,8 @@ in
       in {
         autostart = true;
         address = [ config.my.services.privado-vpn.ipAddress ];
-        dns = config.my.services.privado-vpn.dns;
+        # Split-Tunnel (table=off): kein resolv.conf via wg-quick — vermeidet resolvconf-Signatur-Konflikt
+        dns = [ ];
         privateKeyFile = config.my.services.privado-vpn.privateKeyFile;
         table = "off";
 

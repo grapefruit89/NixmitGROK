@@ -100,6 +100,7 @@ in
       semaphore = lib.mkOption { type = lib.types.port; default = 3015; description = "Semaphore HTTP port."; };
       cockpit = lib.mkOption { type = lib.types.port; default = 9090; description = "Cockpit admin port."; };
       amp = lib.mkOption { type = lib.types.port; default = 8085; description = "AMP Web UI port."; };
+      crowdsec = lib.mkOption { type = lib.types.port; default = 8091; description = "CrowdSec LAPI port (nicht 8080 — SABnzbd)."; };
       gatus = lib.mkOption { type = lib.types.port; default = 8084; description = "Gatus Web UI port."; };
       loki = lib.mkOption { type = lib.types.port; default = 3100; description = "Loki API port."; };
       grafana = lib.mkOption { type = lib.types.port; default = 3005; description = "Grafana Web UI port."; };

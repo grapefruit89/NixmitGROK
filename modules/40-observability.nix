@@ -15,6 +15,7 @@ let
   cfgObs = config.my.observability;
   cfgCrowdsec = config.my.security.crowdsec;
   domain = config.my.configs.identity.domain;
+  yaml = pkgs.formats.yaml { };
 
 in
 {
@@ -480,7 +481,49 @@ in
     })
 
     # ─── SECTION 3: CROWDSEC SECURITY ─────────────────────────────────────────
-    (lib.mkIf cfgCrowdsec.enable {
+    (lib.mkIf cfgCrowdsec.enable (
+      let
+        # cscli in crowdsec-setup liest /etc/crowdsec/config.yaml (ohne -c)
+        crowdsecEtcConfig = yaml.generate "crowdsec-etc.yaml" config.services.crowdsec.settings.general;
+
+        crowdsecCredFile = "/var/lib/crowdsec/local_api_credentials.yaml";
+        crowdsecCollections = lib.concatMapStringsSep " " lib.escapeShellArg [
+          "crowdsecurity/linux"
+          "crowdsecurity/sshd"
+          "crowdsecurity/caddy"
+        ];
+
+        crowdsecSetupFixed = pkgs.writeShellScript "crowdsec-setup-fixed" ''
+          set -eu
+          ${pkgs.coreutils}/bin/mkdir -p /var/lib/crowdsec/state/hub/
+          ${lib.getExe' pkgs.crowdsec "cscli"} -c /etc/crowdsec/config.yaml hub update
+          ${lib.getExe' pkgs.crowdsec "cscli"} -c /etc/crowdsec/config.yaml collections install ${crowdsecCollections} || true
+          ${lib.getExe' pkgs.crowdsec "cscli"} -c /etc/crowdsec/config.yaml machines add ${config.networking.hostName} --auto --force -f "${crowdsecCredFile}"
+        '';
+
+        crowdsecPostSetup = pkgs.writeShellScript "crowdsec-post-setup" ''
+          _port="${toString config.my.ports.crowdsec}"
+          ${pkgs.findutils}/bin/find /var/lib/crowdsec -type f 2>/dev/null | while read -r _f; do
+            ${pkgs.gnused}/bin/sed -i \
+              -e "s|:8080/|:$_port/|g" \
+              -e "s|:8088/|:$_port/|g" \
+              -e "s|:8080|:$_port|g" \
+              -e "s|:8088|:$_port|g" \
+              "$_f" || true
+          done
+          ${pkgs.coreutils}/bin/rm -rf /var/lib/crowdsec-firewall-bouncer-register 2>/dev/null || true
+        '';
+      in
+      {
+      systemd.tmpfiles.rules = [
+        "d /etc/crowdsec 0755 root root -"
+        "L+ /etc/crowdsec/config.yaml - - - - ${crowdsecEtcConfig}"
+        "d /var/lib/crowdsec 0755 root root -"
+        "d /var/lib/crowdsec/data 0755 crowdsec crowdsec -"
+        "d /var/lib/crowdsec/config 0755 crowdsec crowdsec -"
+        "d /var/lib/crowdsec/hub 0755 crowdsec crowdsec -"
+      ];
+
       services.crowdsec = {
         enable = true;
         hub.collections = [
@@ -503,13 +546,20 @@ in
         settings = {
           general.api.server = {
             enable = true;
-            listen_uri = "127.0.0.1:8080";
+            listen_uri = "127.0.0.1:${toString config.my.ports.crowdsec}";
           };
           lapi.credentialsFile = "/var/lib/crowdsec/local_api_credentials.yaml";
         };
       };
 
       systemd.services.crowdsec.serviceConfig = {
+        ExecStartPre = lib.mkOverride 50 [
+          " "
+          crowdsecSetupFixed
+          "${lib.getExe' pkgs.crowdsec "crowdsec"} -c /etc/crowdsec/config.yaml -t -error"
+          crowdsecPostSetup
+        ];
+        StateDirectory = "crowdsec";
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
@@ -525,7 +575,7 @@ in
         enable = true;
         registerBouncer.enable = true;
         settings = {
-          api_url = "http://127.0.0.1:8080/";
+          api_url = "http://127.0.0.1:${toString config.my.ports.crowdsec}/";
           mode = "nftables";
           nftables = {
             ipv4_set_name = "crowdsec_blocked_ipv4";
@@ -547,6 +597,7 @@ in
         NoNewPrivileges = true;
         CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
       };
-    })
+      }
+    ))
   ];
 }

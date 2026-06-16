@@ -1,10 +1,11 @@
 # Stufe 0+: Zugang — Netzwerk, Notfall-User, Assertions. Keine Dienste.
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   p = import ./profile.nix;
   lan = p.network.lan;
   emergency = p.access.emergency;
+  moritz = (import ../../users/moritz/profile.nix).name;
 
   lanNetwork = config.systemd.network.networks.${lan.systemdNetworkName} or { };
   lanAddress = lanNetwork.networkConfig.Address or "";
@@ -37,7 +38,20 @@ in
     lib.mkForce [ p.network.sshPort ]
   );
 
-  # Headless-Dev: rebuild ohne interaktives sudo (Grok-Agent / Notfall-User)
+  # Git-Repo liegt unter /home/nixos → Deploy-Key für grapefruit89/NixmitGROK
+  environment.systemPackages = [ pkgs.git pkgs.openssh ];
+  programs.ssh.knownHosts.github = {
+    hostNames = [ "github.com" ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6fj0Xq7y9eGOs90HzDPW3uTilh/Ar";
+  };
+  programs.ssh.extraConfig = ''
+    Host github.com
+      IdentityFile /home/nixos/.ssh/id_ed25519_github
+      IdentitiesOnly yes
+      User git
+  '';
+
+  # Headless-Dev: sudo ohne Passwort (moritz hat keins; Grok-Agent / Notfall-User)
   security.sudo.extraRules = [
     {
       users = [ emergency.name ];
@@ -52,6 +66,19 @@ in
         }
         {
           command = "/etc/nixos/tools/rebuild-q958.sh";
+          options = [ "NOPASSWD" "SETENV" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl";
+          options = [ "NOPASSWD" "SETENV" ];
+        }
+      ];
+    }
+    {
+      users = [ moritz ];
+      commands = [
+        {
+          command = "ALL";
           options = [ "NOPASSWD" "SETENV" ];
         }
       ];

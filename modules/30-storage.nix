@@ -37,6 +37,7 @@ let
       "/var/lib/caddy"
       "/var/lib/gatus"
       "/var/lib/crowdsec"
+      "/var/lib/filebrowser"
       "/var/lib/forgejo"
       "/var/lib/semaphore"
     ] ++ lib.optional (user != "") "/home/${user}/.grok";

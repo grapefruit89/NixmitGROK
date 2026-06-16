@@ -46,6 +46,14 @@ let
     echo "ADMIN_TOKEN=${dk.vaultwarden.adminToken}" > ${secretsDir}/vaultwarden.env
     chmod 600 ${secretsDir}/vaultwarden.env
 
+    _amp_user="${(dk.amp or { }).adminUser or "admin"}"
+    _amp_pass="${(dk.amp or { }).adminPassword or "q958-dev-amp-admin-v1"}"
+    cat > ${secretsDir}/amp.env <<AMPEOF
+AMP_ADMIN_USER=$_amp_user
+AMP_ADMIN_PASSWORD=$_amp_pass
+AMPEOF
+    chmod 600 ${secretsDir}/amp.env
+
     # Context7: nur wenn in profile.nix gesetzt; sonst Datei mit Hinweis
     if [ -n "${dk.context7.apiKey}" ]; then
       echo "CONTEXT7_API_KEY=${dk.context7.apiKey}" > ${secretsDir}/${p.secrets.files.context7}
@@ -63,10 +71,18 @@ CTX7EOF
       chmod 600 ${secretsDir}/${p.secrets.files.context7}
     fi
 
-    # Privado WG — nur aus profile.local.nix (gitignored), nie ins Repo
+    # Privado WG — Key aus profile.local.nix → .env + Keyfile für wg-quick
     if [ -n "${privadoKey}" ]; then
       printf '%s' "${privadoKey}" > ${secretsDir}/${p.secrets.files.privadoKey}
       chmod 600 ${secretsDir}/${p.secrets.files.privadoKey}
+      cat > ${secretsDir}/${p.secrets.files.privadoEnv} <<PRIVADOEOF
+PRIVADO_PRIVATE_KEY=${privadoKey}
+PRIVADO_ADDRESS=${p.network.privado.address}
+PRIVADO_ENDPOINT=${p.network.privado.endpoint}
+PRIVADO_PUBLIC_KEY=${p.network.privado.publicKey}
+PRIVADO_DNS=${lib.concatStringsSep "," p.network.privado.dns}
+PRIVADOEOF
+      chmod 600 ${secretsDir}/${p.secrets.files.privadoEnv}
     fi
 
     # Grok: System-Secret → User-Home wenn Key in context7.env steht
