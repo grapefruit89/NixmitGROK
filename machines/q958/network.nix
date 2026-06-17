@@ -1,4 +1,18 @@
-# q958 — Netzwerk-Verdrahtung aus profile.nix (keine Keys, keine Widersprüche)
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Verdrahtung Netzwerk — Blocky, Tailscale, Pocket-ID, Privado
+#   docs:
+#     - docs/AUDIT-blocky-caddy-ipv6.md
+#   services:
+#     - blocky
+#     - tailscale
+#     - pocket-id
+#   tags:
+#     - network
+#     - dns
+# ---
 { config, lib, ... }:
 
 let
@@ -9,10 +23,14 @@ let
 in
 {
   my.configs.network = {
-    dnsDoH = p.network.dns.doh;
     dnsBootstrap = p.network.dns.bootstrap;
-    dnsFallback = p.network.dns.fallback;
+    ipv6 = {
+      disableOnInterfaces = p.network.ipv6.disableOnInterfaces;
+      firewall = p.network.ipv6.firewall;
+    };
   };
+
+  my.security.firewall.ipv6 = p.network.ipv6.firewall;
 
   my.services = {
     blocky.upstreamDns = p.network.blocky.upstream;

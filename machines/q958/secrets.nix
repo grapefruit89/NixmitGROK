@@ -1,4 +1,12 @@
-# q958 — Datei-Secrets unter /var/lib/secrets (vorläufig statt SOPS).
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Secret-Provisionierung unter /var/lib/secrets (vor SOPS)
+#   tags:
+#     - secrets
+#     - provision
+# ---
 { config, lib, pkgs, ... }:
 
 let
@@ -23,6 +31,10 @@ let
     (dk.zigbee or { }).mqttPassword
     or (throw "secrets.devKeys.zigbee.mqttPassword in profile.local.nix setzen");
   moritz = (import ../../users/moritz/profile.nix).name;
+  cfToken = (local.secrets.cloudflare or { }).apiToken or "";
+  ddnsZone = p.network.ddns.zone;
+  ddnsRecord = p.network.ddns.record;
+  ddnsFqdn = "${ddnsRecord}.${ddnsZone}";
 
   provisionScript = pkgs.writeShellScript "q958-secrets-provision" ''
     set -euo pipefail
@@ -111,6 +123,38 @@ CTX7EOF
       chmod 600 ${secretsDir}/${p.secrets.files.context7}
     fi
 
+    # Cloudflare DDNS — Token + qdm12/ddns-updater config.json (Zone-ID per API)
+    if [ -n "${cfToken}" ]; then
+      printf '%s' "${cfToken}" > ${secretsDir}/cloudflare_api_token
+      chmod 600 ${secretsDir}/cloudflare_api_token
+      ZONE_DATA=$(${pkgs.curl}/bin/curl -sf -X GET \
+        "https://api.cloudflare.com/client/v4/zones?name=${ddnsZone}" \
+        -H "Authorization: Bearer ${cfToken}" -H "Content-Type: application/json")
+      ZONE_ID=$(${pkgs.jq}/bin/jq -r '.result[0].id // empty' <<< "$ZONE_DATA")
+      if [ -z "$ZONE_ID" ]; then
+        echo "DDNS: Cloudflare Zone ${ddnsZone} nicht gefunden — Token prüfen"
+        exit 1
+      fi
+      ${pkgs.jq}/bin/jq -n \
+        --arg token "${cfToken}" \
+        --arg zone_id "$ZONE_ID" \
+        --arg domain "${ddnsFqdn}" \
+        '{
+          settings: [{
+            provider: "cloudflare",
+            zone_identifier: $zone_id,
+            domain: $domain,
+            ttl: 1,
+            token: $token,
+            ip_version: "ipv4"
+          }]
+        }' > ${secretsDir}/ddns-updater-config.json
+      chmod 600 ${secretsDir}/ddns-updater-config.json
+      install -d -m 755 -o ddns-updater -g ddns-updater /var/lib/ddns-updater
+      install -m 600 -o ddns-updater -g ddns-updater \
+        ${secretsDir}/ddns-updater-config.json /var/lib/ddns-updater/config.json
+    fi
+
     # Privado WG — Key aus profile.local.nix → .env + Keyfile für wg-quick
     if [ -n "${privadoKey}" ]; then
       printf '%s' "${privadoKey}" > ${secretsDir}/${p.secrets.files.privadoKey}
@@ -164,6 +208,7 @@ in
       "mosquitto.service"
       "home-assistant-mqtt-provision.service"
       "home-assistant.service"
+      "ddns-updater.service"
     ];
   };
 }

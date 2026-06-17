@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Rollout-Stufen und Feature-Roadmap q958
+  tags:
+    - roadmap
+    - rollout
+---
+
 # Nix-Grok q958 — Roadmap
 
 Steuerung: `machines/q958/profile.nix` → `rollout.stufe` (eine Zahl, rebuild, testen).

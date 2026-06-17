@@ -1,11 +1,27 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures local networking infrastructure and central database plumbing, 
-# including AdGuard Home, Valkey (Redis-fork) cache, and the PostgreSQL server.
-# Key decisions -> ADR-10-network.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Blocky DNS, Valkey, PostgreSQL, Tailscale, Pocket-ID, Privado
+#   docs:
+#     - docs/adr/001-dns-dot-fail-closed.md
+#     - docs/adr/002-ipv6-homelab-v4-only.md
+#     - docs/AUDIT-blocky-caddy-ipv6.md
+#   lib:
+#     - lib/dns-policy.nix
+#     - lib/memory-policy.nix
+#     - lib/critical-systemd.nix
+#   services:
+#     - blocky
+#     - postgresql
+#     - redis-valkey
+#     - tailscaled
+#     - pocket-id
+#   tags:
+#     - dns
+#     - network
+#     - database
+# ---
 { config, lib, pkgs, ... }:
 
 let
@@ -13,11 +29,14 @@ let
   cfgValkey = config.my.services.valkey;
   cfgPostgres = config.my.services.postgresql;
   ramGB = config.my.configs.hardware.ramGB;
+  sockets = import ../lib/unix-sockets.nix { inherit lib; };
 
   lanIP = config.my.configs.server.lanIP;
   tailscaleIP = config.my.configs.server.tailscaleIP;
-  dnsDoH = config.my.configs.network.dnsDoH;
   dnsBootstrap = config.my.configs.network.dnsBootstrap;
+  dnsPolicy = import ../lib/dns-policy.nix { inherit lib; };
+  memory = import ../lib/memory-policy.nix { inherit lib; };
+  criticalSystemd = import ../lib/critical-systemd.nix { inherit lib; oomScore = -1000; };
   domain = config.my.configs.identity.domain;
   portAdguard = config.my.ports.adguard;
   portValkey = config.my.ports.valkey;
@@ -46,7 +65,11 @@ in
       enable = lib.mkEnableOption "Blocky DNS Resolver";
       port = lib.mkOption { type = lib.types.port; default = 53; description = "Blocky DNS listening port."; };
       metricsPort = lib.mkOption { type = lib.types.port; default = 4000; description = "Blocky HTTP metrics port."; };
-      upstreamDns = lib.mkOption { type = lib.types.listOf lib.types.str; default = [ "1.1.1.1" "8.8.8.8" ]; description = "List of upstream DNS servers."; };
+      upstreamDns = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "tcp-tls:1.1.1.1:853" ];
+        description = "Blocky-Upstreams — nur DoT (tcp-tls:host:853), DoH (https://…) oder DoQ.";
+      };
     };
 
     # 🔗 Tailscale VPN
@@ -102,6 +125,17 @@ in
   # CONFIG
   # ============================================================================
   config = lib.mkMerge [
+    # ── IPv6: gezielt pro Interface aus (Tailscale/WG unberührt) ─────────────
+    {
+      boot.kernel.sysctl = lib.mkMerge (
+        map (iface: {
+          "net.ipv6.conf.${iface}.disable_ipv6" = lib.mkDefault 1;
+          "net.ipv6.conf.${iface}.accept_ra" = lib.mkDefault 0;
+          "net.ipv6.conf.${iface}.autoconf" = lib.mkDefault 0;
+        }) config.my.configs.network.ipv6.disableOnInterfaces
+      );
+    }
+
     # ── ADGUARD HOME ──────────────────────────────────────────────────────────
     (lib.mkIf cfgAdguard.enable {
       services.adguardhome = {
@@ -116,9 +150,8 @@ in
           dns = {
             bind_hosts = [ "127.0.0.1" lanIP tailscaleIP ];
             port = 53;
-            upstream_dns = dnsDoH;
+            upstream_dns = [ "https://dns.cloudflare.com/dns-query" ];
             bootstrap_dns = dnsBootstrap;
-            fallback_dns = config.my.configs.network.dnsFallback;
             cache_size = 33554432; # 32MB Cache
             cache_ttl_min = 300;
             cache_ttl_max = 86400; # Max TTL 24h
@@ -204,11 +237,10 @@ in
         package = pkgs.valkey;
         servers.valkey = {
           enable = true;
-          bind = "127.0.0.1"; # Lokal isolierter Ingress
-          port = portValkey;
+          port = 0; # nur UDS — kein TCP
           openFirewall = false;
-          unixSocket = "/run/redis-valkey/valkey.sock";
-          unixSocketPerm = 660;
+          unixSocket = sockets.valkey;
+          unixSocketPerm = 666;
           settings = {
             maxmemory = "256mb";
             maxmemory-policy = "allkeys-lru";
@@ -219,6 +251,7 @@ in
 
       # Valkey Server Sandboxing
       systemd.services.redis-valkey.serviceConfig = {
+        RuntimeDirectoryMode = lib.mkForce "0755";
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
@@ -226,7 +259,7 @@ in
         NoNewPrivileges = true;
         MemoryDenyWriteExecute = true;
         CapabilityBoundingSet = "";
-        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        RestrictAddressFamilies = [ "AF_UNIX" ];
         ReadWritePaths = [ "/var/lib/redis-valkey" ];
       };
     })
@@ -244,7 +277,7 @@ in
         # Rationale: Liegt auf Fast-Tier SSD/NVMe (Ext4/Btrfs mit noatime), getrennt von mergerfs
         dataDir = "/var/lib/postgresql";
 
-        # Unix Sockets bevorzugen, TCP/IP standardmäßig deaktiviert (Zero-Trust)
+        # Unix Sockets only — enableTCPIP=false lässt nixpkgs sonst localhost:5432 offen
         enableTCPIP = false;
 
         # Streng lokaler Socket-Zugriff per Ident-Validation
@@ -254,6 +287,7 @@ in
         '';
 
         settings = {
+          listen_addresses = lib.mkForce "";
           shared_buffers = "${toString (lib.max 1 (lib.floor (ramGB * 0.25)))}GB";
           work_mem = "64MB";
           maintenance_work_mem = "${toString (lib.max 128 (lib.floor (ramGB * 64)))}MB";
@@ -263,20 +297,23 @@ in
       };
 
       # PostgreSQL Systemd Sandboxing Härtung
-      systemd.services.postgresql.serviceConfig = {
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
-        PrivateDevices = true;
-        NoNewPrivileges = true;
-        ProtectKernelTunables = true;
-        ProtectKernelModules = true;
-        ProtectControlGroups = true;
-        RestrictRealtime = true;
-        RestrictSUIDSGID = true;
-        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
-        ReadWritePaths = [ "/var/lib/postgresql" ];
-      };
+      systemd.services.postgresql.serviceConfig = lib.mkMerge [
+        (memory.postgres ramGB)
+        {
+          ProtectSystem = "strict";
+          ProtectHome = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          NoNewPrivileges = true;
+          ProtectKernelTunables = true;
+          ProtectKernelModules = true;
+          ProtectControlGroups = true;
+          RestrictRealtime = true;
+          RestrictSUIDSGID = true;
+          RestrictAddressFamilies = [ "AF_UNIX" ];
+          ReadWritePaths = [ "/var/lib/postgresql" ];
+        }
+      ];
     })
 
     # ── BLOCKY DNS RESOLVER ───────────────────────────────────────────────────
@@ -290,12 +327,19 @@ in
       services.blocky = {
         enable = true;
         settings = {
+          connectIPVersion = "v4";
           ports = {
             dns = config.my.services.blocky.port;
             http = config.my.services.blocky.metricsPort;
           };
           upstreams.groups.default = config.my.services.blocky.upstreamDns;
           bootstrapDns = config.my.configs.network.dnsBootstrap;
+          dnssec = {
+            validate = true;
+          };
+          filtering = {
+            queryTypes = [ "AAAA" ];
+          };
           customDNS = {
             mapping = {
               "nixhome.local" = lanIP;
@@ -306,17 +350,48 @@ in
         };
       };
 
-      networking.nameservers = lib.mkForce [ "127.0.0.1" "1.1.1.1" ];
+      networking.nameservers = lib.mkForce [ "127.0.0.1" ];
+
+      networking.resolvconf.enable = lib.mkForce false;
+
+      environment.etc."resolv.conf".text = ''
+        # NixOS/Blocky — nur lokaler Resolver (DoT egress via Blocky)
+        nameserver 127.0.0.1
+      '';
+
+      assertions = [
+        {
+          assertion = dnsPolicy.allEncrypted config.my.services.blocky.upstreamDns;
+          message = "DNS: Blocky-Upstreams müssen verschlüsselt sein (tcp-tls:/https://) — kein Klartext.";
+        }
+        {
+          assertion = dnsPolicy.allEncrypted config.my.configs.network.dnsBootstrap;
+          message = "DNS: Blocky-Bootstrap muss verschlüsselt sein — kein Klartext.";
+        }
+        {
+          assertion = dnsPolicy.nonePlaintext config.my.services.blocky.upstreamDns;
+          message = "DNS: Klartext-Upstreams in blocky.upstreamDns erkannt.";
+        }
+        {
+          assertion = config.networking.nameservers == [ "127.0.0.1" ];
+          message = "DNS: resolv.conf darf nur 127.0.0.1 (Blocky) — kein 1.1.1.1-Bypass.";
+        }
+        {
+          assertion = config.my.configs.network.ipv6.firewall == false;
+          message = "IPv6: Homelab-v4-only — my.configs.network.ipv6.firewall muss false sein.";
+        }
+      ];
 
       systemd.services.blocky = {
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
+        wantedBy = [ "multi-user.target" ];
         before = lib.mkIf config.services.caddy.enable [ "caddy.service" ];
       };
 
-      systemd.services.blocky.serviceConfig = {
-        Restart = lib.mkDefault "always";
-        RestartSec = lib.mkDefault "5s";
+      systemd.services.blocky.serviceConfig = lib.mkMerge [
+        criticalSystemd
+        {
         ProtectSystem = lib.mkDefault "strict";
         ProtectHome = lib.mkDefault true;
         PrivateTmp = lib.mkDefault true;
@@ -329,7 +404,12 @@ in
         RestrictNamespaces = lib.mkDefault true;
         NoNewPrivileges = lib.mkDefault true;
         PrivateNetwork = lib.mkDefault false;
-        RestrictAddressFamilies = lib.mkDefault [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        RestrictAddressFamilies = lib.mkDefault (
+          if config.my.configs.network.ipv6.firewall then
+            [ "AF_INET" "AF_INET6" "AF_UNIX" ]
+          else
+            [ "AF_INET" "AF_UNIX" ]
+        );
         CapabilityBoundingSet = lib.mkDefault [ "CAP_NET_BIND_SERVICE" ];
         AmbientCapabilities = lib.mkDefault [ "CAP_NET_BIND_SERVICE" ];
         SystemCallFilter = lib.mkDefault [
@@ -344,7 +424,8 @@ in
         ReadWritePaths = lib.mkDefault [ "/var/lib/blocky" ];
         MemoryHigh = lib.mkDefault "200M";
         MemoryMax = lib.mkDefault "500M";
-      };
+        }
+      ];
     })
 
     # ── TAILSCALE VPN ─────────────────────────────────────────────────────────
@@ -469,6 +550,7 @@ in
       };
 
       systemd.services.pocket-id.serviceConfig = lib.mkMerge [
+        (memory.pocketId { })
         {
           ProtectSystem = "strict";
           ProtectHome = true;
@@ -485,7 +567,6 @@ in
           RestrictSUIDSGID = true;
           LockPersonality = true;
           ReadWritePaths = [ config.my.services.pocket-id.dataDir ];
-          OOMScoreAdjust = -900;
         }
         (lib.mkIf (config.my.services.pocket-id.secretsFile != "") {
           EnvironmentFile = lib.mkAfter [ "-${config.my.services.pocket-id.secretsFile}" ];

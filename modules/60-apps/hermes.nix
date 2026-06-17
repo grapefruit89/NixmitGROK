@@ -1,4 +1,14 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Hermes-Agent Gateway mit Container-Isolation
+#   services:
+#     - hermes-agent
+#   tags:
+#     - hermes
+#     - llm
+# ---
 { config, lib, pkgs, ... }:
 
 let

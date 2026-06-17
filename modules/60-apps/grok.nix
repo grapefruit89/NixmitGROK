@@ -1,3 +1,14 @@
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Grok Build CLI als systemd-Dienst (Headless-Dev)
+#   services:
+#     - grok
+#   tags:
+#     - grok
+#     - headless-dev
+# ---
 { config, lib, pkgs, grok-cli ? null, ... }:
 
 let

@@ -1,3 +1,12 @@
+# ---
+# meta:
+#   layer: 1
+#   role: flake
+#   purpose: Flake-Inputs und NixOS-Output q958 inkl. Pakete
+#   tags:
+#     - flake
+#     - entrypoint
+# ---
 {
   description = "NixOS Configuration — Fujitsu Q958 Homelab Server";
 

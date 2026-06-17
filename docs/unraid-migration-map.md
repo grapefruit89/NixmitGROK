@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Mapping Unraid → NixOS Dienste und Pfade
+  tags:
+    - migration
+    - unraid
+---
+
 # Unraid → Nix-Grok Migrationskarte
 
 Quelle: `neuesmaterialfuergrok/*/unraid/Docker_Containers.md`  

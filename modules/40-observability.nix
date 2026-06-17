@@ -1,16 +1,28 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Consolidates all system observability components:
-# 1. Gatus Health Monitoring and Dynamic Endpoints.
-# 2. Vector, Loki, and Grafana (VLG) Log Scraper and Dashboard Stack.
-# 3. CrowdSec Security Threat Detection Engine and nftables Bouncer.
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Gatus, Vector/Loki/Grafana, CrowdSec
+#   docs:
+#     - docs/AUDIT-blocky-caddy-ipv6.md
+#     - docs/memory_oom.md
+#   lib:
+#     - lib/memory-policy.nix
+#   services:
+#     - gatus
+#     - loki
+#     - grafana
+#     - vector
+#     - crowdsec
+#   tags:
+#     - observability
+# ---
 { config, lib, pkgs, ... }:
 
 let
   caddy = import ../lib/caddy-helpers.nix { inherit lib; };
+  memory = import ../lib/memory-policy.nix { inherit lib; };
+  sockets = import ../lib/unix-sockets.nix { inherit lib; };
   cfgGatus = config.my.services.gatus;
   cfgObs = config.my.observability;
   cfgCrowdsec = config.my.security.crowdsec;
@@ -66,6 +78,7 @@ in
       users.users.monitoring = {
         isSystemUser = true;
         group = "media";
+        extraGroups = lib.mkIf (config.my.services.valkey.enable or false) [ "redis-valkey" ];
         home = "/var/lib/monitoring";
         createHome = true;
         shell = pkgs.bash;
@@ -197,8 +210,8 @@ in
         '')
         (pkgs.writeShellScriptBin "check-valkey-uds" ''
           set -euo pipefail
-          if [ -S "/run/redis-valkey/valkey.sock" ]; then
-            response=$(${pkgs.valkey}/bin/valkey-cli -s /run/redis-valkey/valkey.sock ping)
+          if [ -S "${sockets.valkey}" ]; then
+            response=$(${pkgs.valkey}/bin/valkey-cli -s ${sockets.valkey} ping)
             if [ "$response" = "PONG" ]; then
               echo "OK: Valkey socket is responding with PONG"
               exit 0
@@ -209,11 +222,21 @@ in
         '')
         (pkgs.writeShellScriptBin "check-forgejo-uds" ''
           set -euo pipefail
-          if ${pkgs.curl}/bin/curl -fsS --unix-socket /run/forgejo/forgejo.sock http://localhost/api/v1/version >/dev/null; then
+          if ${pkgs.curl}/bin/curl -fsS --unix-socket ${sockets.forgejo} http://localhost/api/v1/version >/dev/null; then
             echo "OK: Forgejo socket is responding"
             exit 0
           else
             echo "ERROR: Forgejo socket not responding"
+            exit 1
+          fi
+        '')
+        (pkgs.writeShellScriptBin "check-grafana-uds" ''
+          set -euo pipefail
+          if ${pkgs.curl}/bin/curl -fsS --unix-socket ${sockets.grafana} http://localhost/api/health | ${pkgs.jq}/bin/jq -e '.database == "ok"' >/dev/null; then
+            echo "OK: Grafana socket is healthy"
+            exit 0
+          else
+            echo "ERROR: Grafana socket health check failed"
             exit 1
           fi
         '')
@@ -393,8 +416,9 @@ in
           enable = true;
           settings = {
             server = {
-              http_addr = "127.0.0.1";
-              http_port = cfgObs.grafanaPort;
+              protocol = "socket";
+              socket = sockets.grafana;
+              socket_mode = "0666";
               domain = "grafana.${domain}";
             };
             security = {
@@ -416,52 +440,14 @@ in
         };
 
         caddy.virtualHosts."grafana.${domain}" = {
-          extraConfig = caddy.proxyTailscaleSso cfgObs.grafanaPort;
+          extraConfig = caddy.proxyUnixTailscaleSso sockets.grafana;
         };
       };
 
       systemd.services = {
-        loki.serviceConfig = {
-          ProtectSystem = lib.mkForce "strict";
-          ProtectHome = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          ProtectKernelTunables = true;
-          ProtectKernelModules = true;
-          ProtectControlGroups = true;
-          NoNewPrivileges = true;
-          MemoryDenyWriteExecute = true;
-          DevicePolicy = "closed";
-          CapabilityBoundingSet = "";
-          ReadWritePaths = [ "/var/lib/loki" ];
-        };
-
-        vector = {
-          serviceConfig = {
-            StateDirectory = "vector";
-            StateDirectoryMode = "0750";
-            ProtectSystem = "strict";
-            ProtectHome = true;
-            PrivateTmp = true;
-            PrivateDevices = true;
-            ProtectKernelTunables = true;
-            ProtectKernelModules = true;
-            ProtectControlGroups = true;
-            NoNewPrivileges = true;
-            MemoryDenyWriteExecute = true;
-            DevicePolicy = "closed";
-            CapabilityBoundingSet = "";
-            ReadWritePaths = [ "/var/lib/vector" ];
-          };
-        };
-
-        grafana = {
-          preStart = lib.mkAfter ''
-            if [ -f /var/lib/secrets/grafana_secret_key ]; then
-              install -D -m 600 -o grafana -g grafana /var/lib/secrets/grafana_secret_key /var/lib/grafana/secret_key
-            fi
-          '';
-          serviceConfig = {
+        loki.serviceConfig = lib.mkMerge [
+          (memory.loki { })
+          {
             ProtectSystem = lib.mkForce "strict";
             ProtectHome = true;
             PrivateTmp = true;
@@ -473,9 +459,56 @@ in
             MemoryDenyWriteExecute = true;
             DevicePolicy = "closed";
             CapabilityBoundingSet = "";
-            ReadWritePaths = [ "/var/lib/grafana" ];
-            EnvironmentFile = "-/var/lib/secrets/grafana.env";
-          };
+            ReadWritePaths = [ "/var/lib/loki" ];
+          }
+        ];
+
+        vector = {
+          serviceConfig = lib.mkMerge [
+            (memory.vector { })
+            {
+              StateDirectory = "vector";
+              StateDirectoryMode = "0750";
+              ProtectSystem = "strict";
+              ProtectHome = true;
+              PrivateTmp = true;
+              PrivateDevices = true;
+              ProtectKernelTunables = true;
+              ProtectKernelModules = true;
+              ProtectControlGroups = true;
+              NoNewPrivileges = true;
+              MemoryDenyWriteExecute = true;
+              DevicePolicy = "closed";
+              CapabilityBoundingSet = "";
+              ReadWritePaths = [ "/var/lib/vector" ];
+            }
+          ];
+        };
+
+        grafana = {
+          preStart = lib.mkAfter ''
+            if [ -f /var/lib/secrets/grafana_secret_key ]; then
+              install -D -m 600 -o grafana -g grafana /var/lib/secrets/grafana_secret_key /var/lib/grafana/secret_key
+            fi
+          '';
+          serviceConfig = lib.mkMerge [
+            (memory.grafana { })
+            {
+              ProtectSystem = lib.mkForce "strict";
+              ProtectHome = true;
+              PrivateTmp = true;
+              PrivateDevices = true;
+              ProtectKernelTunables = true;
+              ProtectKernelModules = true;
+              ProtectControlGroups = true;
+              NoNewPrivileges = true;
+              MemoryDenyWriteExecute = true;
+              DevicePolicy = "closed";
+              CapabilityBoundingSet = "";
+              ReadWritePaths = [ "/var/lib/grafana" ];
+              EnvironmentFile = "-/var/lib/secrets/grafana.env";
+            }
+          ];
         };
       };
     })
@@ -579,9 +612,11 @@ in
           mode = "nftables";
           nftables = {
             ipv4_set_name = "crowdsec_blocked_ipv4";
-            ipv6_set_name = "crowdsec_blocked_ipv6";
             table = "inet filter";
             chain = "input";
+            ipv6.enabled = config.my.security.firewall.ipv6;
+          } // lib.optionalAttrs config.my.security.firewall.ipv6 {
+            ipv6_set_name = "crowdsec_blocked_ipv6";
           };
         };
       };

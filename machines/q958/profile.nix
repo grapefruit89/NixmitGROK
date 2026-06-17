@@ -1,5 +1,14 @@
-# Einzige Quelle für alle q958-Maschinenwerte. Keine User-Daten — die liegen unter users/.
-# Secrets + Notfall-Passwort: machines/q958/profile.local.nix (gitignored)
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Einzige Datenquelle aller q958-Maschinenwerte
+#   docs:
+#     - docs/ROADMAP.md
+#   tags:
+#     - profile
+#     - single-source-of-truth
+# ---
 let
   localPath =
     if builtins.pathExists ./profile.local.nix then ./profile.local.nix
@@ -25,9 +34,11 @@ in
   };
 
   boot = {
-    menuName = "Basis-System";
+    menuName = "Basics_erfolgreich";
     sortKey = "0_basis";
-    generationLimit = 5;
+    # 8 rollierende NixOS-Generationen + 2 feste Baselines (boot-baseline.nix) ≈ 10 Menü-Einträge
+    generationLimit = 8;
+    pinnedGenerations = [ 85 86 ];
     kernelParams = [ "i915.enable_guc=2" ];
   };
 
@@ -37,13 +48,20 @@ in
       prefixLength = 24;
       interface = "eno1";
       gateway = "192.168.2.1";
-      dns = [ "127.0.0.1" "1.1.1.1" ];
+      dns = [ "127.0.0.1" ];
       systemdNetworkName = "10-lan";
     };
     tailscaleIP = "100.64.0.1";
     sshPort = 22;
     blocky = {
-      upstream = [ "1.1.1.1" "8.8.8.8" ];
+      upstream = [
+        "tcp-tls:1.1.1.1:853" # Cloudflare
+        "tcp-tls:1.0.0.1:853"
+        "tcp-tls:9.9.9.9:853" # Quad9
+        "tcp-tls:149.112.112.112:853"
+        "tcp-tls:194.242.2.2:853" # Mullvad
+        "tcp-tls:dnsforge.de:853"
+      ];
     };
     privado = {
       endpoint = "91.148.245.70:51820";
@@ -52,9 +70,20 @@ in
       dns = [ "198.18.0.1" "198.18.0.2" ];
     };
     dns = {
-      doh = [ "https://dns.cloudflare.com/dns-query" ];
-      bootstrap = [ "1.1.1.1" ];
-      fallback = [ "1.1.1.1" ];
+      bootstrap = [
+        "tcp-tls:1.1.1.1:853"
+        "tcp-tls:9.9.9.9:853"
+      ];
+    };
+    # IPv6 Homelab: ad acta — nur v4 auf LAN-PHY (eno1). Ausnahme: tailscale0 (Mesh).
+    ipv6 = {
+      disableOnInterfaces = [ "eno1" ];
+      firewall = false;
+    };
+    ddns = {
+      zone = "m7c5.de";
+      record = "nix";
+      enable = ((local.secrets.cloudflare or { }).apiToken or "") != "";
     };
   };
 

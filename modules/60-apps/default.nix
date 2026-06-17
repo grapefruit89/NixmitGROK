@@ -1,6 +1,22 @@
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Apps-Domain — Submodule, Caddy-Ingress-Härtung
+#   lib:
+#     - lib/critical-systemd.nix
+#     - lib/memory-policy.nix
+#   services:
+#     - caddy
+#   tags:
+#     - apps
+#     - caddy
+# ---
 { config, lib, pkgs, ... }:
 
 let
+  criticalSystemd = import ../../lib/critical-systemd.nix { inherit lib; oomScore = -900; };
+  memory = import ../../lib/memory-policy.nix { inherit lib; };
   cfgVaultwarden = config.my.services.vaultwarden;
   cfgHomepage = config.my.services.homepage;
   cfgHass = config.my.services.home-assistant;
@@ -121,17 +137,23 @@ in
       wants =
         lib.optional config.my.services.blocky.enable "blocky.service"
         ++ [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
     };
 
-    systemd.services.caddy.serviceConfig = {
-      OOMScoreAdjust = lib.mkForce (-900);
-      Restart = lib.mkForce "always";
-      RestartSec = lib.mkForce "5s";
-      ProtectSystem = lib.mkForce "strict";
-      ProtectHome = lib.mkForce true;
-      NoNewPrivileges = lib.mkForce true;
-      PrivateTmp = lib.mkForce true;
-      RestrictNamespaces = lib.mkForce true;
-    };
+    systemd.services.caddy.serviceConfig = lib.mkMerge [
+      criticalSystemd
+      (memory.caddy { })
+      {
+        ProtectSystem = lib.mkForce "strict";
+        ProtectHome = lib.mkForce true;
+        NoNewPrivileges = lib.mkForce true;
+        PrivateTmp = lib.mkForce true;
+        RestrictNamespaces = lib.mkForce true;
+        # nixpkgs setzt 14400s/10 — für kritischen Ingress aushebeln
+        StartLimitIntervalSec = lib.mkForce 0;
+        StartLimitBurst = lib.mkForce 0;
+        RestartPreventExitStatus = lib.mkForce [ ];
+      }
+    ];
   };
 }

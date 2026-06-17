@@ -1,4 +1,12 @@
-# Einzige Quelle für alle moritz-spezifischen Werte.
+# ---
+# meta:
+#   layer: 4
+#   role: user
+#   purpose: Einzige Datenquelle moritz-spezifischer Werte (Keys, Domain)
+#   tags:
+#     - profile
+#     - moritz
+# ---
 {
   name = "moritz";
   domain = "nix.m7c5.de";

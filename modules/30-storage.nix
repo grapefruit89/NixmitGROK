@@ -1,3 +1,14 @@
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Impermanence, MergerFS, Restic, Storage-Mover zwischen Tiers
+#   services:
+#     - restic-backup
+#   tags:
+#     - storage
+#     - impermanence
+# ---
 { config, lib, pkgs, ... }:
 
 let

@@ -1,3 +1,11 @@
+# ---
+# meta:
+#   role: package
+#   purpose: DuckDB MCP-Server für lokale nixos_docs.db
+#   tags:
+#     - mcp
+#     - nixos-docs
+# ---
 { lib, buildNpmPackage, fetchNpmDeps, nodejs_22 }:
 
 buildNpmPackage (finalAttrs: {

@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Session-Log Review-Fixes 2026-06-17
+  tags:
+    - session
+    - changelog
+---
+
 # Session 2026-06-17 — Review-Fixes & Pre-Rebuild Hardening
 
 Dokumentation aller Änderungen aus der Claude-Review-Session und dem anschließenden

@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Migrationsnotizen aus Chat-Verlauf
+  tags:
+    - migration
+    - notes
+---
+
 # Kirschen aus USB-Chats
 
 Quelle: `/mnt/usbinspect/neuesmaterialfuergrok/` auf USB — **nicht** im Git-Repo.  

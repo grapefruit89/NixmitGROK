@@ -1,3 +1,14 @@
+---
+meta:
+  role: doc
+  purpose: Projektregeln — 5-Schichten-Architektur, q958, Rollout, harte Regeln
+  docs:
+    - docs/FILE-META.md
+  tags:
+    - agents
+    - architecture
+---
+
 # Projektregeln — /etc/nixos
 
 ## Architektur (5 Schichten)
@@ -48,6 +59,11 @@
 **A/B: kein spinning device.** **B: immer SATA.** **C: immer HDD.**
 
 q958: keine NVMe → `tierA.bus = sata` auf `/dev/sda`. Zusätzliche SATA-SSD wäre Tier B (`NIXDATA`). `mergerfsEnable` bleibt `false` bis Branches existieren.
+
+## File-Meta (KI)
+
+Maschinenlesbare Datei-Header **ohne Nix-Build-Kosten**: kommentiertes YAML in `.nix`/`.sh`, Frontmatter in `.md`.  
+Schema: `meta/schema.yaml` · Bootstrap: `tools/bootstrap-file-meta.py` · Index: `tools/list-file-meta.sh --write` → `meta/index.yaml` · Doku: `docs/FILE-META.md` · **ADR:** `docs/adr/README.md`
 
 ## Harte Regeln
 

@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Secrets-Hygiene — was nicht ins Git, profile.local, SOPS
+  tags:
+    - security
+    - secrets
+---
+
 # Security — Secrets im Git
 
 ## Was passiert ist

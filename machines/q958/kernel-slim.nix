@@ -1,3 +1,13 @@
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Host-spezifische Kernel-Slim-Policy für q958
+#   lib:
+#     - lib/kernel/policy.nix
+#   tags:
+#     - kernel-slim
+# ---
 { config, lib, pkgs, ... }:
 
 let

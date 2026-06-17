@@ -1,11 +1,14 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures game server environments, specifically the AMP (Application
-# Management Panel) sandbox and system service.
-# Key decisions -> ADR-80-gaming.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: AMP Game-Server-Manager in FHS-Sandbox
+#   services:
+#     - amp
+#   tags:
+#     - gaming
+#     - amp
+# ---
 { config, lib, pkgs, ... }:
 
 let

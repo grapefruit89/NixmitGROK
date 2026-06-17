@@ -1,4 +1,12 @@
-# Caddy vHost-Bausteine — eine Funktion, Snippet-Imports als Liste.
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Caddy vHost-Helfer — Proxy, SSO, Unix-Socket-Upstreams
+#   tags:
+#     - caddy
+#     - ingress
+# ---
 { lib }:
 
 let
@@ -13,6 +21,19 @@ let
     lib.concatStringsSep "\n" (
       map (snippet: "import ${snippet}") imports
       ++ [ "reverse_proxy ${upstream host port}" ]
+    );
+
+  mkProxyUnix =
+    {
+      socketPath,
+      imports ? [ ],
+    }:
+    let
+      sockets = import ./unix-sockets.nix { inherit lib; };
+    in
+    lib.concatStringsSep "\n" (
+      map (snippet: "import ${snippet}") imports
+      ++ [ "reverse_proxy ${sockets.toCaddyUpstream socketPath}" ]
     );
 
   streamingBackend = port: ''
@@ -39,4 +60,28 @@ in
   proxySecurity = port: mkProxy { inherit port; imports = [ "security_headers" ]; };
 
   proxyDirect = port: mkProxy { inherit port; };
+
+  proxyUnixSso = socketPath:
+    mkProxyUnix {
+      inherit socketPath;
+      imports = [ "sso_auth" ];
+    };
+
+  proxyUnixTailscaleSso = socketPath:
+    mkProxyUnix {
+      inherit socketPath;
+      imports = [ "tailscale_admin" "sso_auth" ];
+    };
+
+  proxyUnixSecurity = socketPath:
+    mkProxyUnix {
+      inherit socketPath;
+      imports = [ "security_headers" ];
+    };
+
+  proxyUnixDirect = socketPath:
+    mkProxyUnix {
+      inherit socketPath;
+      imports = [ ];
+    };
 }

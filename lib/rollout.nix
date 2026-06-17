@@ -1,4 +1,11 @@
-# Gemeinsame Rollout-Helfer — keine Host-/User-Werte.
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Rollout-Helfer erstAb für stufenweise Service-Aktivierung
+#   tags:
+#     - rollout
+# ---
 { lib, stufe }:
 
 let

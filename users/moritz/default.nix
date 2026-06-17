@@ -1,3 +1,12 @@
+# ---
+# meta:
+#   layer: 4
+#   role: user
+#   purpose: System-User moritz aus profile.nix
+#   tags:
+#     - user
+#     - moritz
+# ---
 { config, pkgs, ... }:
 
 let

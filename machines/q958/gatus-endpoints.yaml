@@ -15,6 +15,14 @@ endpoints:
     conditions:
       - "[CONNECTED] == true"
 
+  # critical: Caddy-Ausfall → kein HTTPS-Ingress, ACME, SSO
+  - name: "caddy-ingress"
+    group: "critical"
+    url: "tcp://127.0.0.1:443"
+    interval: "1m"
+    conditions:
+      - "[CONNECTED] == true"
+
   # critical: Blocky-Ausfall → ACME-Renewal und interne Auflösung brechen still
   - name: "blocky-dns"
     group: "critical"
@@ -64,10 +72,17 @@ endpoints:
 
   - name: "grafana"
     group: "observability"
-    url: "http://127.0.0.1:3005/api/health"
+    url: "ssh://127.0.0.1:22"
     interval: "1m"
     conditions:
-      - "[STATUS] == 200"
+      - "[CONNECTED] == true"
+      - "[STATUS] == 0"
+      - "[BODY] == OK*"
+    ssh:
+      username: "monitoring"
+      private-key: "/var/lib/gatus/ssh_key"
+      body:
+        command: "/run/current-system/sw/bin/check-grafana-uds"
 
   - name: "gatus-self"
     group: "observability"

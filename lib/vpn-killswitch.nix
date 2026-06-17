@@ -1,4 +1,12 @@
-# systemd-Härtung: Dienst darf nur über privado-WG egress (Kill-Switch).
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: VPN-Kill-Switch systemd-Attrs für privado WireGuard
+#   tags:
+#     - vpn
+#     - privado
+# ---
 { lib, privadoEnabled }:
 
 lib.optionalAttrs privadoEnabled {

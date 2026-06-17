@@ -1,9 +1,21 @@
-# Stufe 0+: Zugang — Netzwerk, Notfall-User, Assertions. Keine Dienste.
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Stufe 0+ Zugang — Notfall-User, LAN, DNS/IPv6-Assertions
+#   docs:
+#     - docs/adr/001-dns-dot-fail-closed.md
+#     - docs/adr/002-ipv6-homelab-v4-only.md
+#   tags:
+#     - access
+#     - rollout
+# ---
 { config, lib, pkgs, ... }:
 
 let
   p = import ./profile.nix;
   lan = p.network.lan;
+  dnsPolicy = import ../../lib/dns-policy.nix { inherit lib; };
   emergency = p.access.emergency;
   moritz = (import ../../users/moritz/profile.nix).name;
 
@@ -31,6 +43,8 @@ in
       Address = "${lan.ip}/${toString lan.prefixLength}";
       Gateway = lan.gateway;
       DNS = lan.dns;
+    } // lib.optionalAttrs (lib.elem lan.interface p.network.ipv6.disableOnInterfaces) {
+      IPv6AcceptRA = "no";
     };
   };
 
@@ -132,6 +146,16 @@ in
         !config.my.security.firewall.enable
         || lib.elem p.network.sshPort firewallPorts;
       message = "ACCESS: Firewall aktiv → Port ${toString p.network.sshPort} muss erlaubt sein.";
+    }
+    {
+      assertion =
+        !(config.my.services.blocky.enable or false)
+        || (
+          lan.dns == [ "127.0.0.1" ]
+          && dnsPolicy.allEncrypted p.network.blocky.upstream
+          && dnsPolicy.allEncrypted p.network.dns.bootstrap
+        );
+      message = "ACCESS: WAN-DNS nur via Blocky/DoT — LAN-DNS nur 127.0.0.1, keine Klartext-Upstreams in profile.nix.";
     }
   ];
 }

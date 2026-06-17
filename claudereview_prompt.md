@@ -1,3 +1,12 @@
+---
+meta:
+  role: doc
+  purpose: Idempotenter Repo-Review-Prompt für Claude
+  tags:
+    - review
+    - prompt
+---
+
 # Repo Review: NixmitGROK — NixOS Homelab (Fujitsu Q958)
 
 > **How to use:** Paste this entire file (or say *"Continue the repo review per `claudereview_prompt.md`"*) into Claude.  

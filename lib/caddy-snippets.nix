@@ -1,7 +1,12 @@
-# Shared Caddyfile snippets — homelab_server Kirschen (kein Geo in Caddy, nie)
-#
-# sso_auth     → Browser-Dienste (*arr, Paperless, Jellyfin-Browser, …)
-# NICHT für    → Jellyfin-Apps (X-Emby-Authorization), auth.* (Deadlock)
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Gemeinsame Caddyfile-Snippets — SSO, Security-Header, Tailscale
+#   tags:
+#     - caddy
+#     - snippets
+# ---
 { lib, pocketIdPort, lanCidr ? "192.168.0.0/16" }:
 
 let

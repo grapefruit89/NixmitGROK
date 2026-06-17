@@ -1,4 +1,12 @@
-# Fujitsu Q958 — reine Verdrahtung. Werte in profile.nix, Zugang in access.nix, Dienste in rollout.nix.
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: q958-Verdrahtung — Module-Imports und my.configs ohne .enable
+#   tags:
+#     - wiring
+#     - q958
+# ---
 { ... }:
 
 let
@@ -12,6 +20,7 @@ in
     ../../modules/00-core.nix
     ../../modules/25-kernel-policy.nix
     ../../modules/10-network.nix
+    ../../modules/10-gateway.nix
     ../../modules/15-firewall.nix
     ../../modules/20-security.nix
     ../../modules/30-storage.nix
@@ -29,6 +38,8 @@ in
     ./secrets.nix
     ./dev-mode.nix
     ./rollout.nix
+    ./boot-baseline.nix
+    ../../modules/91-security-assertions.nix
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -53,6 +64,10 @@ in
       server = {
         lanIP = p.network.lan.ip;
         tailscaleIP = p.network.tailscaleIP;
+      };
+      ddns = {
+        zone = p.network.ddns.zone;
+        record = p.network.ddns.record;
       };
     };
 

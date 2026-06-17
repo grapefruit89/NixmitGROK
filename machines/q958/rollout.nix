@@ -1,17 +1,16 @@
-# Schrittweise Aktivierung — eine Zahl in profile.nix: rollout.stufe
-#
-#   0 = Zugang + Grok CLI (SSH, statische IP, Headless-Dev) — Homelab-Dienste aus
-#   1 = System-Tuning (zram, kernel-slim, boot-safeguard, nix-tuning)
-#   2 = Netzwerk-Basis (postgresql, valkey, blocky, tailscale, pocket-id, privado)
-#       Secrets: Dateien unter /var/lib/secrets (siehe secrets.nix) — AdGuard aus (Port 53)
-#   3 = Storage (automount + mergerfs wenn storage.mergerfsEnable)
-#   4 = Observability (gatus, metrics)
-#   5 = Reverse Proxy (caddy)
-#   6 = Media-Stack (*arr, jellyfin, sabnzbd; restic nur wenn profile.local secrets.restic.repository gesetzt)
-#   7 = Apps (vaultwarden, homepage, paperless, HA, hermes, …)
-#   8 = Security (firewall, fail2ban, crowdsec, dropbear)
-#   9 = Impermanence (production mode)
-#  SOPS = ganz zum Schluss, separat
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Einzige Quelle für .enable — schrittweise Aktivierung nach rollout.stufe
+#   docs:
+#     - docs/ROADMAP.md
+#   lib:
+#     - lib/rollout.nix
+#   tags:
+#     - rollout
+#     - enable
+# ---
 { config, lib, ... }:
 
 let
@@ -72,6 +71,7 @@ in
 
     jellyfin.enable = erstAb 6;
     jellyseerr.enable = erstAb 6;
+    audiobookshelf.enable = erstAb 6;
     sonarr.enable = erstAb 6;
     radarr.enable = erstAb 6;
     readarr.enable = erstAb 6;
@@ -95,6 +95,11 @@ in
 
   services.hermes-agent.enable = erstAb 7;
   services.caddy.enable = erstAb 5;
+
+  my.services.ddns-updater.enable =
+    if p.network.ddns.enable then erstAb 5 else lib.mkForce false;
+  my.services.dns-guard.enable =
+    if p.network.ddns.enable then erstAb 5 else lib.mkForce false;
 
   networking.firewall.allowedTCPPorts = lib.mkIf (stufe < 8) (
     lib.mkForce [ p.network.sshPort ]

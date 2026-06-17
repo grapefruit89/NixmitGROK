@@ -1,4 +1,13 @@
-# Schicht B — Homelab-Headless-Server (kein WiFi, kein BT, kein Audio, keine Webcams)
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Kernel-Blacklist headless — WLAN, Audio, Desktop
+#   tags:
+#     - kernel
+#     - blacklist
+#     - headless
+# ---
 {
   wireless = [
     "ath9k"

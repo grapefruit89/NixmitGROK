@@ -1,15 +1,22 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures the forge ecosystem: Forgejo (git hosting), Semaphore (Ansible UI),
-# and Cockpit (system administration).
-# Key decisions -> ADR-70-forge.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Forgejo Git, Semaphore Ansible-UI, Cockpit
+#   lib:
+#     - lib/unix-sockets.nix
+#   services:
+#     - forgejo
+#     - semaphore
+#   tags:
+#     - forge
+#     - git
+# ---
 { config, lib, pkgs, ... }:
 
 let
   caddy = import ../lib/caddy-helpers.nix { inherit lib; };
+  sockets = import ../lib/unix-sockets.nix { inherit lib; };
   cfgForgejo = config.my.services.forgejo;
   cfgSemaphore = config.my.services.semaphore;
   cfgCockpit = config.my.services.cockpit;
@@ -75,16 +82,24 @@ in
         };
         settings = {
           server = {
-            HTTP_ADDR = "127.0.0.1";
-            HTTP_PORT = cfgForgejo.port;
+            PROTOCOL = "http+unix";
+            HTTP_ADDR = sockets.forgejo;
             ROOT_URL = "https://git.${domain}/";
           };
           service.DISABLE_REGISTRATION = cfgForgejo.disableRegistration;
         };
       };
 
+      systemd.services.forgejo.serviceConfig = {
+        RuntimeDirectoryMode = "0755";
+        # Caddy reverse_proxy braucht Zugriff auf http+unix-Socket
+        ExecStartPost = [
+          "+${pkgs.coreutils}/bin/chmod 0666 ${sockets.forgejo}"
+        ];
+      };
+
       services.caddy.virtualHosts."git.${domain}" = {
-        extraConfig = caddy.proxySecurity cfgForgejo.port;
+        extraConfig = caddy.proxyUnixSecurity sockets.forgejo;
       };
     })
 

@@ -1,3 +1,12 @@
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Boot/Root-FS und Kernel-Module an Tier-A aus profile.nix
+#   tags:
+#     - hardware
+#     - tier-a
+# ---
 { config, lib, modulesPath, ... }:
 
 let

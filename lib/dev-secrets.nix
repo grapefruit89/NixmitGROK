@@ -1,4 +1,12 @@
-# Helfer: Dev-Mode-Warnung für Platzhalter-Secrets (bricht den Build nicht).
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Development-Warnungen für Platzhalter-Secrets
+#   tags:
+#     - secrets
+#     - dev
+# ---
 { lib, secretsDir, devKeys, files }:
 
 let

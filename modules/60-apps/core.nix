@@ -1,8 +1,19 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Vaultwarden, Homepage, Filebrowser, Linkwarden, Open WebUI
+#   services:
+#     - vaultwarden
+#     - homepage
+#   tags:
+#     - apps
+# ---
 { config, lib, pkgs, ... }:
 
 let
   caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
+  factory = import ../../lib/service-factory.nix { inherit lib; };
   cfgVaultwarden = config.my.services.vaultwarden;
   cfgHomepage = config.my.services.homepage;
   cfgFilebrowser = config.my.services.filebrowser;
@@ -10,8 +21,11 @@ let
   cfgOpenWebui = config.my.services.open-webui;
 
   domain = config.my.configs.identity.domain;
+  dnsMap = import ../../lib/dns-map.nix { inherit domain; };
   portVaultwarden = config.my.ports.vaultwarden;
   portHomepage = config.my.ports.homepage;
+  vaultHost = dnsMap.host "vaultwarden";
+  linksHost = dnsMap.host "linkwarden";
 
 in
 {
@@ -27,7 +41,7 @@ in
         config = {
           ROCKET_ADDRESS = "127.0.0.1";
           ROCKET_PORT = portVaultwarden;
-          DOMAIN = "https://vault.${domain}";
+          DOMAIN = "https://${vaultHost}";
 
           # Security defaults
           SIGNUPS_ALLOWED = false;
@@ -61,8 +75,7 @@ in
         "d /var/log/vaultwarden 0750 vaultwarden vaultwarden -"
       ];
 
-      # Caddy Reverse Proxy mit WebSocket Support für Live-Sync
-      services.caddy.virtualHosts."vault.${domain}" = {
+      services.caddy.virtualHosts.${vaultHost} = {
         extraConfig = ''
           import security_headers
 
@@ -77,33 +90,20 @@ in
         '';
       };
 
-      # Systemd Security Hardening
-      systemd.services.vaultwarden.serviceConfig = {
-        StateDirectory = "vaultwarden";
-        ProtectSystem = lib.mkForce "strict";
-        ProtectHome = lib.mkForce true;
-        PrivateTmp = lib.mkForce true;
-        PrivateDevices = lib.mkForce true;
-        ProtectKernelTunables = lib.mkForce true;
-        ProtectKernelModules = lib.mkForce true;
-        ProtectControlGroups = lib.mkForce true;
-        NoNewPrivileges = lib.mkForce true;
-        MemoryDenyWriteExecute = lib.mkForce true;
-        LockPersonality = lib.mkForce true;
-        RestrictRealtime = lib.mkForce true;
-        RestrictSUIDSGID = lib.mkForce true;
-        CapabilityBoundingSet = lib.mkForce "";
-        DevicePolicy = lib.mkForce "closed";
-        SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
-        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
-        ReadWritePaths = [
-          "/var/lib/vaultwarden"
-          "/var/log/vaultwarden"
-        ];
-        # mkForce würde DATA_FOLDER aus dem NixOS-Modul entfernen → rsa_key.pem read-only
-        EnvironmentFile = "/var/lib/secrets/vaultwarden.env";
-        Environment = "DATA_FOLDER=/var/lib/vaultwarden";
-      };
+      systemd.services.vaultwarden.serviceConfig = lib.mkMerge [
+        (factory.systemdHardening {
+          readWritePaths = [
+            "/var/lib/vaultwarden"
+            "/var/log/vaultwarden"
+          ];
+        })
+        {
+          StateDirectory = "vaultwarden";
+          MemoryDenyWriteExecute = lib.mkForce true;
+          EnvironmentFile = "/var/lib/secrets/vaultwarden.env";
+          Environment = "DATA_FOLDER=/var/lib/vaultwarden";
+        }
+      ];
     })
 
     (lib.mkIf cfgHomepage.enable {
@@ -471,41 +471,35 @@ in
       };
     })
 
-    (lib.mkIf cfgLinkwarden.enable {
-
-
-      services.linkwarden = {
-        enable = true;
-        inherit (cfgLinkwarden) port;
-        environmentFile = "/var/lib/secrets/linkwarden.env";
-        environment = {
-          NEXTAUTH_URL = "https://links.${domain}/api/v1/auth";
+    (lib.mkIf cfgLinkwarden.enable (lib.mkMerge [
+      {
+        services.linkwarden = {
+          enable = true;
+          inherit (cfgLinkwarden) port;
+          environmentFile = "/var/lib/secrets/linkwarden.env";
+          environment = {
+            NEXTAUTH_URL = "https://${linksHost}/api/v1/auth";
+          };
         };
-      };
+      }
 
-      services.caddy.virtualHosts."links.${domain}" = {
-        extraConfig = caddy.proxySso cfgLinkwarden.port;
-      };
+      (factory.mkService {
+        inherit config;
+        name = "linkwarden";
+        port = cfgLinkwarden.port;
+        mode = "sso";
+        caddyOnly = true;
+      })
 
-      systemd.services.linkwarden = {
-        serviceConfig = {
+      {
+        systemd.services.linkwarden.serviceConfig = {
           DynamicUser = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          SystemCallFilter = [ "@system-service" "~@privileged" ];
           OOMScoreAdjust = 300;
-          StateDirectory = "linkwarden";
-          CapabilityBoundingSet = "";
-          RestrictNamespaces = true;
           ProtectClock = true;
           ProtectHostname = true;
-          LockPersonality = true;
-          RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
         };
-      };
-    })
+      }
+    ]))
 
     (lib.mkIf cfgOpenWebui.enable {
       services.open-webui = {

@@ -1,54 +1,87 @@
-
-# arr-helper.nix
-# Shared helper to generate standardized *Arr services.
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Fabrik für *arr-Apps — User, systemd, Caddy, RAM-Limits
+#   docs:
+#     - docs/memory_oom.md
+#     - docs/SPEC_REGISTRY.md
+#   lib:
+#     - lib/memory-policy.nix
+#     - lib/service-factory.nix
+#   services:
+#     - sonarr
+#     - radarr
+#     - readarr
+#     - prowlarr
+#   tags:
+#     - media
+#     - arr
+# ---
 { config, lib, ... }:
 
 let
-  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
+  factory = import ../../lib/service-factory.nix { inherit lib; };
+  memory = import ../../lib/memory-policy.nix { inherit lib; };
   vpnKillSwitchAttrs = import ../../lib/vpn-killswitch.nix {
     inherit lib;
     privadoEnabled = config.my.services.privado-vpn.enable or false;
   };
 in
 {
-  mkArrService = { name, port, dataDir, uid, gid, useVpnKillSwitch ? false }: {
-    services.${name} = {
-      enable = true;
-      openFirewall = false;
-      inherit dataDir;
-    };
-
-    users.groups.${name} = {
-      gid = lib.mkDefault gid;
-    };
-    users.users.${name} = {
-      uid = lib.mkDefault uid;
-      group = name;
-      isSystemUser = true;
-      extraGroups = [ "media" ];
-    };
-
-    systemd.services.${name} = lib.mkMerge [
-      (lib.mkIf useVpnKillSwitch vpnKillSwitchAttrs)
+  mkArrService =
+    {
+      name,
+      port,
+      dataDir,
+      uid,
+      gid,
+      useVpnKillSwitch ? false,
+      metadataDir ? null,
+    }:
+    lib.mkMerge [
       {
-        serviceConfig = {
-          ProtectSystem = lib.mkForce "strict";
-          ProtectHome = lib.mkForce true;
-          PrivateTmp = lib.mkForce true;
-          PrivateDevices = lib.mkForce true;
-          NoNewPrivileges = lib.mkForce true;
-          UMask = lib.mkForce "0002";
-          ReadWritePaths = [
-            dataDir
-            "/data/media"
-            "/data/downloads"
-          ];
+        services.${name} = {
+          enable = true;
+          openFirewall = false;
+          inherit dataDir;
+        };
+
+        users.groups.${name} = {
+          gid = lib.mkDefault gid;
+        };
+        users.users.${name} = {
+          uid = lib.mkDefault uid;
+          group = name;
+          isSystemUser = true;
+          extraGroups = [ "media" ];
         };
       }
-    ];
 
-    services.caddy.virtualHosts."${name}.${config.my.configs.identity.domain}" = {
-      extraConfig = caddy.proxySso port;
-    };
-  };
+      (factory.mkService {
+        inherit config;
+        inherit name port;
+        mode = "sso";
+        hardeningProfile = "dotnet";
+        readWritePaths = [
+          dataDir
+          "/data/media"
+          "/data/downloads"
+        ];
+        memoryPolicy = memory.arr { };
+        extraSystemd = {
+          UMask = lib.mkForce "0002";
+          BindPaths = lib.mkIf (metadataDir != null) [
+            {
+              source = metadataDir;
+              target = "/var/lib/${name}/MediaCover";
+            }
+          ];
+        };
+      })
+
+      (lib.mkIf useVpnKillSwitch {
+        systemd.services.${name} = vpnKillSwitchAttrs;
+      })
+    ];
 }

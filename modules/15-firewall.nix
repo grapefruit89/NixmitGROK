@@ -1,13 +1,17 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Reine nftables-L4-Firewall: Geo, Rate-Limits, SYN-Schutz, CrowdSec-Sets.
-# Geo/ASN NIEMALS in Caddy — eine Wahrheit hier im Kernel.
-#
-# Hinweis Cloudflare orange cloud: saddr = CF-Edge-IP → L4-Geo wirkungslos.
-# Für Geo entweder DNS-only (graue Wolke) oder CF Firewall Rules am Edge.
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: nftables L4 — Geo-Block, Rate-Limits, CrowdSec-Sets
+#   docs:
+#     - docs/adr/002-ipv6-homelab-v4-only.md
+#     - docs/AUDIT-blocky-caddy-ipv6.md
+#   services:
+#     - nftables
+#   tags:
+#     - firewall
+#     - nftables
+# ---
 { config, pkgs, lib, ... }:
 
 let
@@ -51,6 +55,12 @@ in
       default = "100/minute";
       description = "Neue HTTP/HTTPS-Verbindungen pro Quell-IP (WAN).";
     };
+
+    ipv6 = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "IPv6-Input-Regeln (CrowdSec v6). false wenn LAN nur v4 (Tailscale bleibt über iifname tailscale0).";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -70,10 +80,12 @@ in
             flags interval
           }
 
+          ${lib.optionalString cfg.ipv6 ''
           set crowdsec_blocked_ipv6 {
             type ipv6_addr
             flags interval
           }
+          ''}
 
           set ssh_meter {
             type ipv4_addr
@@ -107,7 +119,16 @@ in
             ip saddr @geoip_blocked drop comment "Geo blocklist"
 
             ip saddr @crowdsec_blocked_ipv4 drop comment "CrowdSec IPv4"
+            ${lib.optionalString cfg.ipv6 ''
             ip6 saddr @crowdsec_blocked_ipv6 drop comment "CrowdSec IPv6"
+            ''}
+            ${lib.optionalString (
+              !cfg.ipv6 && config.my.configs.network.ipv6.disableOnInterfaces != [ ]
+            ) ''
+            iifname { ${lib.concatStringsSep ", " (
+              map (i: "\"${i}\"") config.my.configs.network.ipv6.disableOnInterfaces
+            )} } meta nfproto ipv6 drop comment "IPv6 off on listed LAN interfaces"
+            ''}
 
             icmp type echo-request limit rate over 10/second drop
             icmp type echo-request accept

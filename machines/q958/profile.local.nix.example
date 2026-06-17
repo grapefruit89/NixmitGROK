@@ -41,6 +41,10 @@
       # WireGuard PrivateKey — landet in /var/lib/secrets/privado.env + privado_private_key
       privateKey = "";
     };
+    cloudflare = {
+      # Zone.DNS.Edit für m7c5.de — DDNS-Updater + dns-guard; leer = kein DDNS-Config
+      apiToken = "";
+    };
     restic = {
       repository = "";
       awsAccessKeyId = "";

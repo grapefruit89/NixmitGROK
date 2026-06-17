@@ -1,4 +1,17 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Sonarr, Radarr, Readarr, Prowlarr via arr-helper
+#   services:
+#     - sonarr
+#     - radarr
+#     - readarr
+#     - prowlarr
+#   tags:
+#     - media
+#     - arr
+# ---
 { config, lib, pkgs, ... }:
 
 let

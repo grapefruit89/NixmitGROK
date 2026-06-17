@@ -1,3 +1,13 @@
+# ---
+# meta:
+#   layer: 4
+#   role: user
+#   purpose: Home-Manager — Grok CLI, MCP, Dotfiles
+#   tags:
+#     - home-manager
+#     - grok
+#     - mcp
+# ---
 { config, osConfig, pkgs, lib, ... }:
 
 let

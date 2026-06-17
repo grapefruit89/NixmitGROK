@@ -1,11 +1,14 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures bubblewrap-based sandboxing policies (jailed-agents) for running
-# autonomous LLM coding agents securely on the host.
-# Key decisions → ADR-90-policy.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Bubblewrap-Policies für jailed LLM-Coding-Agenten
+#   services:
+#     - jailed-agents
+#   tags:
+#     - policy
+#     - sandbox
+# ---
 { config
 , lib
 , pkgs

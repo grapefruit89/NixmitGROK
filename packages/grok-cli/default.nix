@@ -1,3 +1,11 @@
+# ---
+# meta:
+#   role: package
+#   purpose: Gepinnte xAI Grok Build CLI als Nix-Derivation
+#   tags:
+#     - grok
+#     - package
+# ---
 { lib, stdenv, fetchurl }:
 
 let

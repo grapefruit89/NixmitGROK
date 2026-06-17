@@ -1,3 +1,14 @@
+---
+meta:
+  role: doc
+  purpose: Repo-Einstieg — Schnellstart q958, Flake-Build
+  docs:
+    - AGENTS.md
+    - docs/ROADMAP.md
+  tags:
+    - readme
+---
+
 # NixmitGROK
 
 NixOS-Flake für den Fujitsu Q958 Homelab-Server. Architektur und Regeln: [`AGENTS.md`](AGENTS.md).

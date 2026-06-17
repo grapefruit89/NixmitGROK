@@ -1,7 +1,11 @@
-# preferences.nix
-# Centralized language, locale, and timezone settings for user moritz.
-# All system modules and user environments derive their settings from here.
-
+# ---
+# meta:
+#   layer: 4
+#   role: user
+#   purpose: Locale, Zeitzone, Sprache für moritz
+#   tags:
+#     - locale
+# ---
 { config, lib, pkgs, ... }:
 
 {

@@ -1,5 +1,12 @@
-# Schicht A — Dateisystem-Module die im Homelab nicht gebraucht werden.
-# ext4/btrfs/vfat/f2fs/ntfs sind Standard; der Rest ist Exot / Enterprise / tot.
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Kernel-Blacklist Schicht A — exotische Dateisysteme
+#   tags:
+#     - kernel
+#     - blacklist
+# ---
 [
   "reiserfs"
   "jfs"

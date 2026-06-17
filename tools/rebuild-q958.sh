@@ -6,6 +6,9 @@ SRC=/home/nixos
 DST=/etc/nixos
 
 if [[ "$(id -u)" -ne 0 ]]; then
+  if [[ "${1:-}" == "--trim-generations" ]]; then
+    exec sudo "$SRC/tools/rebuild-q958.sh" "$@"
+  fi
   echo "==> Pre-checks"
   if [[ ! -f "$SRC/machines/q958/profile.local.nix" ]]; then
     echo "FEHLER: $SRC/machines/q958/profile.local.nix fehlt"
@@ -14,6 +17,10 @@ if [[ "$(id -u)" -ne 0 ]]; then
   fi
   bash "$SRC/tools/verify-no-secrets.sh"
   exec sudo "$SRC/tools/rebuild-q958.sh" "$@"
+fi
+
+if [[ "${1:-}" == "--trim-generations" ]]; then
+  exec "$SRC/tools/trim-generations-q958.sh"
 fi
 
 if [[ ! -f "$SRC/machines/q958/profile.local.nix" ]]; then

@@ -1,11 +1,13 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures critical core subsystem parameters, boot settings, kernel slimming,
-# ZRAM swap protection, and store tuning.
-# Key decisions -> ADR-00-core.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Boot-Safeguard, Nix-Tuning, ZRAM-Swap, zentrale System-Optionen
+#   tags:
+#     - core
+#     - zram
+#     - nix
+# ---
 { config, lib, pkgs, ... }:
 
 let
@@ -69,9 +71,23 @@ in
         tailscaleIP = lib.mkOption { type = lib.types.str; description = "Server Tailscale IP (set in machines/<host>/profile.nix)."; };
       };
       network = {
-        dnsDoH = lib.mkOption { type = lib.types.listOf lib.types.str; default = [ "https://dns.cloudflare.com/dns-query" ]; description = "List of upstream DNS DoH endpoints."; };
-        dnsBootstrap = lib.mkOption { type = lib.types.listOf lib.types.str; default = [ "1.1.1.1" ]; description = "List of bootstrap DNS IPs."; };
-        dnsFallback = lib.mkOption { type = lib.types.listOf lib.types.str; default = [ "1.1.1.1" ]; description = "List of fallback DNS IPs."; };
+        dnsBootstrap = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ "tcp-tls:1.1.1.1:853" ];
+          description = "Verschlüsselter Blocky-Bootstrap (DoT/DoH) — niemals Klartext-IP.";
+        };
+        ipv6 = {
+          disableOnInterfaces = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Physische Interfaces ohne IPv6 (sysctl + systemd-networkd). Tailscale/WG nicht listen.";
+          };
+          firewall = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "false = keine CrowdSec/nftables IPv6-Regeln (Homelab nur v4 auf LAN).";
+          };
+        };
       };
     };
 
@@ -86,6 +102,16 @@ in
       readarr = lib.mkOption { type = lib.types.port; default = 8787; description = "Readarr port."; };
       prowlarr = lib.mkOption { type = lib.types.port; default = 9696; description = "Prowlarr port."; };
       sabnzbd = lib.mkOption { type = lib.types.port; default = 8080; description = "SABnzbd port."; };
+      audiobookshelf = lib.mkOption {
+        type = lib.types.port;
+        default = 13378;
+        description = "Audiobookshelf port (nicht 8000 — Vaultwarden).";
+      };
+      ddns-updater = lib.mkOption {
+        type = lib.types.port;
+        default = 10100;
+        description = "DDNS-Updater WebUI/API port.";
+      };
       vaultwarden = lib.mkOption { type = lib.types.port; default = 8000; description = "Vaultwarden port."; };
       homepage = lib.mkOption { type = lib.types.port; default = 8082; description = "Homepage port."; };
       mqtt = lib.mkOption { type = lib.types.port; default = 1883; description = "MQTT broker port."; };

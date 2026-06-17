@@ -1,5 +1,12 @@
-# Schicht A — globale Blacklist (alle Hosts mit kernel-slim, außer mode = blank)
-# Datacenter, Legacy, Security-Risiken, Exoten, Amateurfunk, tote Busse.
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Kernel-Blacklist global — Datacenter/Legacy/Sicherheit
+#   tags:
+#     - kernel
+#     - blacklist
+# ---
 {
   securityLegacy = [
     "appletalk"

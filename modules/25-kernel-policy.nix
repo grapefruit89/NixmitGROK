@@ -1,4 +1,14 @@
-# Kernel-Zwiebelschale — Optionen (Werte kommen aus machines/<host>/profile.nix)
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: NixOS-Optionen Kernel-Slim-Modus und Homelab-Profil
+#   lib:
+#     - lib/kernel/policy.nix
+#   tags:
+#     - kernel
+#     - options
+# ---
 { lib, ... }:
 
 let

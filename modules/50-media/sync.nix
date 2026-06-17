@@ -1,4 +1,14 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Media-Stack Locale/Config-Sync per systemd oneshot
+#   services:
+#     - media-stack-config-sync
+#   tags:
+#     - media
+#     - sync
+# ---
 { config, lib, pkgs, ... }:
 
 let

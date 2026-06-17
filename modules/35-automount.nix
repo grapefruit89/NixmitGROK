@@ -1,10 +1,14 @@
-
-# 35-automount.nix – Label-basiertes Tier-Mounting
-# Regeln:
-#   Tier A/B = SSD only (rotational=0), nie HDD
-#   Tier A   = NVMe-SSD, oder SATA-SSD wenn keine NVMe (unlabeled: nvme → A, ata → B)
-#   Tier B   = SATA-SSD only — nie NVMe, nie HDD
-#   Tier C   = HDD only (rotational=1, cold storage)
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Label-Automount Tier A/B/C und optional MergerFS
+#   services:
+#     - storage-automount
+#   tags:
+#     - automount
+#     - storage
+# ---
 { config, lib, pkgs, ... }:
 
 let

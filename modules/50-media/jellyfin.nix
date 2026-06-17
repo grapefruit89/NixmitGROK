@@ -1,11 +1,29 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Jellyfin QuickSync + Jellyseerr hinter Caddy
+#   docs:
+#     - docs/memory_oom.md
+#   lib:
+#     - lib/memory-policy.nix
+#   services:
+#     - jellyfin
+#     - seerr
+#   tags:
+#     - media
+#     - jellyfin
+# ---
 { config, lib, pkgs, ... }:
 
 let
   caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
+  factory = import ../../lib/service-factory.nix { inherit lib; };
+  memory = import ../../lib/memory-policy.nix { inherit lib; };
   cfgJellyfin = config.my.services.jellyfin;
   cfgJellyseerr = config.my.services.jellyseerr;
   domain = config.my.configs.identity.domain;
+  dnsMap = import ../../lib/dns-map.nix { inherit domain; };
   portJellyfin = config.my.ports.jellyfin;
   portJellyseerr = config.my.ports.jellyseerr;
 
@@ -40,7 +58,9 @@ in
       };
 
       # Systemd Sandboxing Härtung
-      systemd.services.jellyfin.serviceConfig = {
+      systemd.services.jellyfin.serviceConfig = lib.mkMerge [
+        (memory.jellyfin { })
+        {
         PrivateDevices = lib.mkForce false; # Erforderlich für DRI-Gerätezugriff
         DeviceAllow = [
           "/dev/dri rw"
@@ -86,9 +106,8 @@ in
         # Netzwerk-Einschränkung (verhindert unkontrollierten Egress)
         IPAddressAllow = [ "127.0.0.0/8" "10.0.0.0/8" "192.168.0.0/16" "100.64.0.0/10" ];
         IPAddressDeny = "any";
-
-        OOMScoreAdjust = 100; # Jellyfin darf bei Speicherknappheit vor Core-Diensten sterben
-      };
+        }
+      ];
 
       # Diagnosewerkzeuge systemweit
       environment.systemPackages = with pkgs; [
@@ -99,7 +118,7 @@ in
       # Client-Split: Jellyfin-Apps senden X-Emby-Authorization (MediaBrowser Client=…).
       # Browser (kein Emby-Header beim ersten Load) → Pocket-ID forward_auth.
       # WAN-Schutz zusätzlich: nftables Geo (Stufe 8).
-      services.caddy.virtualHosts."jellyfin.${domain}" = {
+      services.caddy.virtualHosts.${dnsMap.host "jellyfin"} = {
         extraConfig = ''
           import streamer_headers
           import security_headers
@@ -118,26 +137,21 @@ in
       };
     })
 
-    (lib.mkIf cfgJellyseerr.enable {
-      services.seerr = {
-        enable = true;
+    (lib.mkIf cfgJellyseerr.enable (lib.mkMerge [
+      {
+        services.seerr = {
+          enable = true;
+          port = portJellyseerr;
+          openFirewall = false;
+        };
+      }
+      (factory.mkService {
+        inherit config;
+        name = "seerr";
         port = portJellyseerr;
-        openFirewall = false;
-      };
-
-      # Systemd Sandboxing Härtung
-      systemd.services.seerr.serviceConfig = {
-        ProtectSystem = lib.mkForce "strict";
-        ProtectHome = lib.mkForce true;
-        PrivateTmp = lib.mkForce true;
-        PrivateDevices = lib.mkForce true;
-        NoNewPrivileges = lib.mkForce true;
-        ReadWritePaths = [ "/var/lib/seerr" ];
-      };
-
-      services.caddy.virtualHosts."seerr.${domain}" = {
-        extraConfig = caddy.proxySso portJellyseerr;
-      };
-    })
+        mode = "sso";
+        readWritePaths = [ "/var/lib/seerr" ];
+      })
+    ]))
   ];
 }

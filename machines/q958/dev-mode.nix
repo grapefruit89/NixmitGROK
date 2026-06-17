@@ -1,4 +1,12 @@
-# Dev-Mode-Hinweis beim nixos-rebuild — informiert, bricht den Build nicht.
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: nixos-rebuild Dev-Mode-Warnung für Platzhalter-Secrets
+#   tags:
+#     - dev
+#     - secrets
+# ---
 { config, lib, ... }:
 
 let

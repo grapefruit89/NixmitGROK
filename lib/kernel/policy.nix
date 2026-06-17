@@ -1,4 +1,12 @@
-# Zwiebelschale: global → homelab → host
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Kernel-Slim-Zwiebelschale — Whitelist/Blacklist + Assertions
+#   tags:
+#     - kernel
+#     - policy
+# ---
 { lib }:
 
 let

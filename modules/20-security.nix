@@ -1,11 +1,17 @@
-
-# ==============================================================================
-# PURPOSE
-# ==============================================================================
-# Configures the hardware-bound multi-factor Sovereign Unlock initrd cascade
-# (TPM2.0 / Tang / FIDO2 / SSH Port 2222) and hardened Zero-Trust production SSH.
-# Key decisions -> ADR-20-security.md
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Sovereign-Unlock, SSH-Härtung, Fail2ban, Dropbear-Rescue
+#   docs:
+#     - docs/SECURITY.md
+#   services:
+#     - sshd
+#     - fail2ban
+#   tags:
+#     - security
+#     - ssh
+# ---
 { config, lib, pkgs, ... }:
 
 let

@@ -1,4 +1,17 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: Home Assistant und Zigbee-Stack (Mosquitto, Zigbee2MQTT)
+#   docs:
+#     - docs/memory_oom.md
+#   services:
+#     - home-assistant
+#     - mosquitto
+#     - zigbee2mqtt
+#   tags:
+#     - iot
+# ---
 { config, lib, pkgs, ... }:
 
 let

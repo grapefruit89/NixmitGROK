@@ -1,4 +1,12 @@
-# q958 — Storage-Verdrahtung: Tier-Policy, Automount, Assertions
+# ---
+# meta:
+#   layer: 2
+#   role: machine
+#   purpose: Storage-Tier-Assertions und Automount-Optionen q958
+#   tags:
+#     - storage
+#     - tier-policy
+# ---
 { config, lib, pkgs, ... }:
 
 let

@@ -1,8 +1,24 @@
-
+# ---
+# meta:
+#   layer: 3
+#   role: module
+#   purpose: SABnzbd Usenet mit VPN-Kill-Switch
+#   docs:
+#     - docs/memory_oom.md
+#   lib:
+#     - lib/memory-policy.nix
+#     - lib/vpn-killswitch.nix
+#   services:
+#     - sabnzbd
+#   tags:
+#     - media
+#     - usenet
+# ---
 { config, lib, ... }:
 
 let
   caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
+  memory = import ../../lib/memory-policy.nix { inherit lib; };
   cfgSabnzbd = config.my.services.sabnzbd;
   domain = config.my.configs.identity.domain;
   portSabnzbd = config.my.ports.sabnzbd;
@@ -42,21 +58,24 @@ in
     systemd.services.sabnzbd = lib.mkMerge [
       vpnKillSwitch
       {
-        serviceConfig = {
-          ProtectSystem = lib.mkForce "strict";
-          ProtectHome = lib.mkForce true;
-          PrivateTmp = lib.mkForce true;
-          PrivateDevices = lib.mkForce true;
-          NoNewPrivileges = lib.mkForce true;
-          UMask = "0002";
-          RuntimeDirectory = "sabnzbd-tmp";
-          RuntimeDirectoryMode = "0700";
-          ReadWritePaths = [
-            "/var/lib/sabnzbd"
-            "/data/downloads"
-            "/run/sabnzbd-tmp"
-          ];
-        };
+        serviceConfig = lib.mkMerge [
+          (memory.sabnzbd { })
+          {
+            ProtectSystem = lib.mkForce "strict";
+            ProtectHome = lib.mkForce true;
+            PrivateTmp = lib.mkForce true;
+            PrivateDevices = lib.mkForce true;
+            NoNewPrivileges = lib.mkForce true;
+            UMask = "0002";
+            RuntimeDirectory = "sabnzbd-tmp";
+            RuntimeDirectoryMode = "0700";
+            ReadWritePaths = [
+              "/var/lib/sabnzbd"
+              "/data/downloads"
+              "/run/sabnzbd-tmp"
+            ];
+          }
+        ];
       }
     ];
 

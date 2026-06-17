@@ -1,5 +1,12 @@
-# Schicht B — Whitelist: Hardware/Module die ein normaler Mensch 2010–2025 verbaut.
-# Assertion: host-requiredModules ⊆ whitelist ∪ host.whitelistExtra
+# ---
+# meta:
+#   layer: 5
+#   role: lib
+#   purpose: Kernel-Whitelist Homelab-Hardware 2010–2025
+#   tags:
+#     - kernel
+#     - whitelist
+# ---
 {
   storage = [
     "ahci"
