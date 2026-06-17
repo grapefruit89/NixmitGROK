@@ -128,6 +128,7 @@ in
       amp = lib.mkOption { type = lib.types.port; default = 8085; description = "AMP Web UI port."; };
       crowdsec = lib.mkOption { type = lib.types.port; default = 8091; description = "CrowdSec LAPI port (nicht 8080 — SABnzbd)."; };
       gatus = lib.mkOption { type = lib.types.port; default = 8084; description = "Gatus Web UI port."; };
+      scrutiny = lib.mkOption { type = lib.types.port; default = 8086; description = "Scrutiny SMART dashboard port."; };
       loki = lib.mkOption { type = lib.types.port; default = 3100; description = "Loki API port."; };
       grafana = lib.mkOption { type = lib.types.port; default = 3005; description = "Grafana Web UI port."; };
     };

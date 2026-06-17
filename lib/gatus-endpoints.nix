@@ -147,13 +147,34 @@ let
         command = "/run/current-system/sw/bin/check-restic-backup";
         interval = "1h";
       })
+    ]
+    ++ lib.optionals (config.my.disk-health.enable or false) [
+      (mkSsh {
+        name = "smartd-active";
+        group = "storage";
+        command = "/run/current-system/sw/bin/check-smartd-active";
+      })
+      (mkHttp {
+        name = "scrutiny-health";
+        group = "storage";
+        host = local;
+        port = ports.scrutiny;
+        path = "/health";
+      })
+      (mkSsh {
+        name = "hdd-smart";
+        group = "storage";
+        command = "/run/current-system/sw/bin/check-hdd-smart";
+        interval = "6h";
+        timeout = "30s";
+      })
     ];
 
   dataServices =
     lib.optionals (svc.postgresql.enable or false) [
       (mkSsh {
         name = "postgresql";
-        group = "core";
+        group = "critical";
         command = "/run/current-system/sw/bin/check-postgres-uds";
       })
     ]

@@ -65,9 +65,9 @@ in
         persistDirs = [ dataDir ];
         readWritePaths = [
           dataDir
-          "/data/media"
           "/data/downloads"
         ];
+        readOnlyPaths = [ "/data/media" ];
         memoryPolicy = memory.arr { };
         extraSystemd = {
           UMask = lib.mkForce "0002";

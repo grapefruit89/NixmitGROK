@@ -23,6 +23,7 @@ let
         crowdsec = sec.crowdsec.enable or false;
         loki = config.services.loki.enable or false;
         gatus = mySvc.gatus.enable or false;
+        scrutiny = config.my.disk-health.enable or false;
         grafana = config.services.grafana.enable or false;
         sabnzbd = mySvc.sabnzbd.enable or false;
         cockpit = mySvc.cockpit.enable or false;

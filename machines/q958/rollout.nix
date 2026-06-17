@@ -107,6 +107,8 @@ in
   my.ingress.fromSpec.enable = erstAb 5;
 
   my.security.runtime-guard.enable = erstAb 8;
+  my.boot-watchdog.enable = erstAb 5;
+  my.disk-health.enable = erstAb 3;
 
   my.services.vpn-confinement = {
     enable = erstAb 6;

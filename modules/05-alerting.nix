@@ -73,5 +73,9 @@ in
     systemd.services.restic-backups-tier-a-sovereign.serviceConfig.OnFailure = lib.mkIf (
       config.my.services.restic-backup.enable or false
     ) (lib.mkDefault [ "alerting-onfailure.service" ]);
+
+    systemd.services.boot-watchdog.serviceConfig.OnFailure = lib.mkIf (
+      config.my.boot-watchdog.enable or false
+    ) (lib.mkDefault [ "alerting-onfailure.service" ]);
   };
 }

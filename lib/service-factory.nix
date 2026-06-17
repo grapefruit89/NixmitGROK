@@ -117,6 +117,7 @@ rec {
       mode ? "sso",
       upstreamHost ? "127.0.0.1",
       readWritePaths ? [ ],
+      readOnlyPaths ? [ ],
       privateDevices ? true,
       hardeningProfile ? "full",
       memoryPolicy ? null,
@@ -148,6 +149,9 @@ rec {
               profile = hardeningProfile;
             })
           ]
+          ++ lib.optional (readOnlyPaths != [ ]) {
+            ReadOnlyPaths = readOnlyPaths;
+          }
           ++ lib.optional (memoryPolicy != null) memoryPolicy
           ++ [ extraSystemd ]
         );

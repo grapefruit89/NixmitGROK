@@ -31,6 +31,10 @@ let
     # Media read-only auf HDD/MergerFS
     "jellyfin"
     "audiobookshelf"
+    "sonarr"
+    "radarr"
+    "readarr"
+    "prowlarr"
     # Backup darf NIXBACKUP
     "restic-backups-tier-a-sovereign"
   ];

@@ -26,6 +26,7 @@ in
     ../../modules/05-sops.nix
     ../../modules/05-alerting.nix
     ../../modules/05-deferred-ops.nix
+    ../../modules/05-boot-watchdog.nix
     ../../modules/25-kernel-policy.nix
     ../../modules/26-kernel-hardening.nix
     ../../modules/27-hardened-core.nix
@@ -37,6 +38,7 @@ in
     ../../modules/20-security.nix
     ../../modules/30-storage.nix
     ../../modules/35-automount.nix
+    ../../modules/36-disk-health.nix
     ../../modules/40-observability.nix
     ../../modules/50-media
     ../../modules/60-apps

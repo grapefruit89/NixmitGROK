@@ -76,6 +76,15 @@ if [[ -d /var/lib/secrets ]]; then
   tar -C /var/lib -cf - secrets 2>/dev/null | zstd -19 -T0 -o "$DEST/var-lib-secrets-${STAMP}.tar.zst" || true
 fi
 
+echo "==> User dotfiles (.config/.local, ohne Cache)"
+DOTFILES_ARCHIVE="$DEST/user-dotfiles-${STAMP}.tar.zst"
+tar -C "$SRC" -cf - \
+  --exclude='.cache' \
+  --exclude='.config/cursor' \
+  --exclude='.local/share/Trash' \
+  .config .local \
+  2>/dev/null | zstd -19 -T0 -o "$DOTFILES_ARCHIVE" || true
+
 if [[ -f /home/nixos/.ssh/id_ed25519_github ]]; then
   install -d -m 700 "$DEST/ssh"
   install -m 600 /home/nixos/.ssh/id_ed25519_github "$DEST/ssh/id_ed25519_github"
@@ -92,9 +101,12 @@ Inhalt:
   - nixos-tree-*.tar.zst → Arbeitsbaum ohne .git
   - local-secrets-*.tar.zst → profile.local.nix (NIEMALS nach GitHub)
   - var-lib-secrets-*.tar.zst → /var/lib/secrets Runtime
+  - user-dotfiles-*.tar.zst → ~/.config + ~/.local (ohne .cache)
   - ssh/ → Deploy-Key GitHub (falls vorhanden)
 Restore profile.local:
   tar -I zstd -xf local-secrets-*.tar.zst -C /home/nixos
+Restore dotfiles:
+  tar -I zstd -xf user-dotfiles-*.tar.zst -C /home/nixos
 EOF
 
 run_git rev-parse HEAD > "$DEST/git-rev-${STAMP}.txt"

@@ -38,6 +38,7 @@ let
     paperless = fqdn "paperless";
     n8n = fqdn "n8n";
     gatus = fqdn "gatus";
+    scrutiny = fqdn "scrutiny";
     grafana = fqdn "grafana";
     forgejo = fqdn "git";
     semaphore = fqdn "semaphore";

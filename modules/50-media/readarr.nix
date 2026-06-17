@@ -29,5 +29,6 @@ in
     dataDir = "/var/lib/readarr";
     uid = uids.readarr;
     gid = gids.readarr;
+    metadataDir = "/mnt/fast_pool/metadata/readarr";
   });
 }

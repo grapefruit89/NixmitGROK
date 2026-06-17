@@ -44,6 +44,12 @@ journalctl -u vpn-leak-check.service -n 20
 
 - Config-Seeds: `modules/50-media/data/jellyfin-{system,network}.xml` (nur wenn fehlend)
 - Media RO: `/data/media` read-only in systemd unit
+
+## *arr (Sonarr/Radarr/Readarr/Prowlarr)
+
+- Media RO: `/data/media` nur `ReadOnlyPaths` — Schutz vor versehentlichem Löschen auf Tier C
+- Downloads RW: `/data/downloads` (Tier B Cache) — Import/Hardlink-Staging
+- MediaCover: Bind-Mounts nach `/mnt/fast_pool/metadata/{sonarr,radarr,readarr,prowlarr}`
 - QSV: `LIBVA_DRIVER_NAME=iHD`, Gruppen `video` + `render`
 - Caddy: X-Emby-Authorization-Bypass für Clients (kein User-Agent-Bypass)
 

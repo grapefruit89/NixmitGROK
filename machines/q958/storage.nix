@@ -47,6 +47,7 @@ in
     "d /mnt/fast_pool/metadata/sonarr 0775 sonarr media -"
     "d /mnt/fast_pool/metadata/radarr 0775 radarr media -"
     "d /mnt/fast_pool/metadata/prowlarr 0775 prowlarr media -"
+    "d /mnt/fast_pool/metadata/readarr 0775 readarr media -"
   ];
 
   my.services.storage-automount = {

@@ -105,6 +105,12 @@ let
         subdomain = "gatus";
         description = "Health Dashboard";
       };
+      scrutiny = {
+        port = ports.scrutiny;
+        zone = "admin-hangar";
+        subdomain = "scrutiny";
+        description = "SMART Disk Health";
+      };
       grafana = {
         socket = "/run/grafana/grafana.sock";
         zone = "admin-hangar";
