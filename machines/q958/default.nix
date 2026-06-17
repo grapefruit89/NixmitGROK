@@ -25,7 +25,9 @@ in
     ../../modules/05-runtime-guard.nix
     ../../modules/05-sops.nix
     ../../modules/05-alerting.nix
+    ../../modules/05-deferred-ops.nix
     ../../modules/25-kernel-policy.nix
+    ../../modules/26-kernel-hardening.nix
     ../../modules/10-network.nix
     ../../modules/10-ingress.nix
     ../../modules/10-vpn-confinement.nix

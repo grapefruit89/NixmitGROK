@@ -24,6 +24,7 @@ let
     # Mover & Automount
     "nixhome-storage-mover"
     "nixhome-pending-watcher"
+    "process-delete-queue"
     "storage-automount"
     # Usenet / Cold paths
     "sabnzbd"

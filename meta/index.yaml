@@ -25,6 +25,19 @@ entries:
         - sre
     ---
   - |
+    file: modules/05-deferred-ops.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: HDD-freundliche Deferred-Deletion-Queue auf Tier B
+      docs:
+        - docs/guides/GUIDE-storage-tiers.md
+      tags:
+        - storage
+        - deferred
+        - hdd
+    ---
+  - |
     file: modules/05-forbidden-tech.nix
     meta:
       id: NIXH-05-MOD-003
@@ -219,6 +232,19 @@ entries:
       tags:
         - kernel
         - options
+    ---
+  - |
+    file: modules/26-kernel-hardening.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: Kernel- und System-Härtung (sysctl, Boot-Parameter, Mount-Flags)
+      docs:
+        - docs/guides/GUIDE-security-secrets.md
+      tags:
+        - security
+        - kernel
+        - sysctl
     ---
   - |
     file: modules/30-storage.nix

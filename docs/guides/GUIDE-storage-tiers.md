@@ -66,3 +66,17 @@ Aktivierung: `rollout.stufe` ≥ 6 wenn `restic.offsiteEnable`.
 
 Hysterese: SSD ≥ 85% oder HDDs bereits spinning → `rclone move` Tier B → C.  
 Timer: `nixhome-storage-mover.timer`.
+
+## Deferred Deletion (HDD-sparend)
+
+Große Löschungen auf Tier C nicht sofort — zuerst in die SSD-Queue:
+
+```bash
+nixhome-defer-delete /mnt/media/some/old/library
+systemctl start process-delete-queue   # oder stündlicher Timer
+```
+
+- Queue: `/mnt/fast_pool/delete_queue` (Tier B)
+- Löscht nur Pfade unter `tierC.mountPoint` oder `/mnt/tier-c/*`
+- HDD aktiv → sofort; HDD schläft → erst nach 7 Tagen (konfigurierbar)
+- Rollout: ab Stufe 3 (`my.storage.deferred.enable`)

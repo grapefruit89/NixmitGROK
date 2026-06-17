@@ -50,7 +50,10 @@ in
     crowdsec.enable = erstAb 8;
     fail2ban.enable = erstAb 8;
     dropbear-rescue.enable = erstAb 8;
+    kernel-hardening.enable = erstAb 8;
   };
+
+  my.storage.deferred.enable = erstAb 3;
 
   my.alerting.enable = erstAb 8;
 
