@@ -245,7 +245,13 @@ in
       lanCidrs = [ "192.168.0.0/16" "10.0.0.0/8" "172.16.0.0/12" ];
       blockedCountries = [ "cn" "ru" "kp" "ir" "sy" "vn" ];
       allowLanDns = true;
+      tailscaleNotrack = true;
     };
+  };
+
+  alerting = {
+    ntfyTopic = local.alerting.ntfyTopic or "";
+    webhookUrl = local.alerting.webhookUrl or "";
   };
 
   restic = {

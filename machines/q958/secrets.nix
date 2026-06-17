@@ -167,6 +167,16 @@ PRIVADO_PUBLIC_KEY=${p.network.privado.publicKey}
 PRIVADO_DNS=${lib.concatStringsSep "," p.network.privado.dns}
 PRIVADOEOF
       chmod 600 ${secretsDir}/${p.secrets.files.privadoEnv}
+      cat > ${secretsDir}/privado.netns.conf <<NETNSEOF
+[Interface]
+PrivateKey = ${privadoKey}
+[Peer]
+PublicKey = ${p.network.privado.publicKey}
+Endpoint = ${p.network.privado.endpoint}
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+NETNSEOF
+      chmod 600 ${secretsDir}/privado.netns.conf
     fi
 
     # Grok: System-Secret → User-Home wenn Key in context7.env steht
@@ -184,10 +194,7 @@ in
 {
   systemd.tmpfiles.rules = [
     "d ${secretsDir} 0700 root root -"
-    "d /etc/gatus 0755 root root -"
   ];
-
-  environment.etc."gatus/endpoints.yaml".source = ./gatus-endpoints.yaml;
 
   system.activationScripts.q958SecretsProvision.text = builtins.readFile provisionScript;
 

@@ -70,6 +70,24 @@ in
         default = [ "tcp-tls:1.1.1.1:853" ];
         description = "Blocky-Upstreams — nur DoT (tcp-tls:host:853), DoH (https://…) oder DoQ.";
       };
+      enableBlocking = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "DNS-Blocklists (StevenBlack etc.) — Adblock in Blocky, nicht nftables.";
+      };
+      blockingLists = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = {
+          ads = [
+            "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+            "https://adaway.org/hosts.txt"
+          ];
+          tracking = [
+            "https://v.firebog.net/hosts/Easyprivacy.txt"
+          ];
+        };
+        description = "Blocky blackLists — Gruppenname → URL-Liste.";
+      };
     };
 
     # 🔗 Tailscale VPN
@@ -202,7 +220,7 @@ in
         };
       };
 
-      services.caddy.virtualHosts."dns.${domain}" = {
+      services.caddy.virtualHosts."dns.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso portAdguard;
       };
 
@@ -347,6 +365,12 @@ in
               "*.${domain}" = lanIP;
             };
           };
+        }
+        // lib.optionalAttrs config.my.services.blocky.enableBlocking {
+          blocking = {
+            blackLists = config.my.services.blocky.blockingLists;
+            clientGroups.default = lib.attrNames config.my.services.blocky.blockingLists;
+          };
         };
       };
 
@@ -484,14 +508,20 @@ in
     })
 
     # ── PRIVADO VPN WIREGUARD CLIENT ──────────────────────────────────────────
-    (lib.mkIf config.my.services.privado-vpn.enable {
+    (lib.mkIf (
+      config.my.services.privado-vpn.enable
+      && !(config.my.services.vpn-confinement.enable or false)
+    ) {
 
 
       networking.wg-quick.interfaces.privado = let
         ip = pkgs.iproute2;
         vpnTable = "51820";
-        # Prowlarr 969, SABnzbd 984 — nur diese UIDs über privado (Split-Tunnel)
-        vpnUids = [ 969 984 ];
+        # Prowlarr + SABnzbd — nur Registry-UIDs über privado (Split-Tunnel)
+        vpnUids = [
+          config.my.users.registry.prowlarr
+          config.my.users.registry.sabnzbd
+        ];
         uidRules = lib.concatMapStringsSep "\n" (uid:
           "${ip}/bin/ip rule add uidrange ${toString uid}-${toString uid} lookup ${vpnTable} priority 9${toString uid}"
         ) vpnUids;
@@ -573,7 +603,7 @@ in
         })
       ];
 
-      services.caddy.virtualHosts."auth.${domain}" = {
+      services.caddy.virtualHosts."auth.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySecurity config.my.services.pocket-id.port;
       };
     })

@@ -21,6 +21,23 @@ meta:
 | NIXH-05-LIB-003 | `lib/memory-policy.nix` | [003](adr/003-oom-cgroup-isolation.md) |
 | NIXH-05-LIB-004 | `lib/critical-systemd.nix` | [005](adr/005-critical-systemd-restart.md) |
 | NIXH-05-LIB-005 | `lib/unix-sockets.nix` | [004](adr/004-unix-socket-upstreams.md) |
+| NIXH-05-LIB-006 | `lib/services-spec.nix` | `docs/ROADMAP.md` (mynixos #1) |
+| NIXH-05-LIB-007 | `lib/storage-policy.nix` | `AGENTS.md` Tier C |
+| NIXH-05-LIB-008 | `lib/forbidden-tech.nix` | — |
+| NIXH-05-LIB-009 | `lib/service-enable.nix` | Ingress |
+| NIXH-05-LIB-010 | `lib/caddy-ingress.nix` | `docs/ROADMAP.md` #5 |
+
+## Policy-Module
+
+| ID | Pfad | ADR / Doku |
+|----|------|------------|
+| NIXH-05-MOD-001 | `modules/05-services-spec.nix` | Zonen + Port-SSoT |
+| NIXH-05-MOD-002 | `modules/05-storage-policy.nix` | Tier-C-Exclusion |
+| NIXH-05-MOD-003 | `modules/05-forbidden-tech.nix` | Docker/Cron/nftables |
+| NIXH-05-MOD-004 | `modules/05-runtime-guard.nix` | Runtime-Watchdog |
+| NIXH-05-MOD-005 | `modules/05-sops.nix` | [006](adr/006-sops-migration-path.md) |
+| NIXH-10-ING-001 | `modules/10-ingress.nix` | Spec-Ingress |
+| NIXH-10-VPN-001 | `modules/10-vpn-confinement.nix` | NetNS Usenet |
 
 ## Gateway & Policy
 

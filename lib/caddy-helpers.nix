@@ -51,9 +51,10 @@ in
 
   proxySso = port: mkProxy { inherit port; imports = [ "sso_auth" ]; };
 
-  proxyTailscaleSso = port:
+  proxyTailscaleSso =
+    port: host ? "127.0.0.1":
     mkProxy {
-      inherit port;
+      inherit port host;
       imports = [ "tailscale_admin" "sso_auth" ];
     };
 

@@ -17,7 +17,6 @@ let
   lan = p.network.lan;
   dnsPolicy = import ../../lib/dns-policy.nix { inherit lib; };
   emergency = p.access.emergency;
-  moritz = (import ../../users/moritz/profile.nix).name;
 
   lanNetwork = config.systemd.network.networks.${lan.systemdNetworkName} or { };
   lanAddress = lanNetwork.networkConfig.Address or "";
@@ -65,39 +64,8 @@ in
       User git
   '';
 
-  # Headless-Dev: sudo ohne Passwort (moritz hat keins; Grok-Agent / Notfall-User)
-  security.sudo.extraRules = [
-    {
-      users = [ emergency.name ];
-      commands = [
-        {
-          command = "/run/current-system/sw/bin/nixos-rebuild";
-          options = [ "NOPASSWD" "SETENV" ];
-        }
-        {
-          command = "/home/nixos/tools/rebuild-q958.sh";
-          options = [ "NOPASSWD" "SETENV" ];
-        }
-        {
-          command = "/etc/nixos/tools/rebuild-q958.sh";
-          options = [ "NOPASSWD" "SETENV" ];
-        }
-        {
-          command = "/run/current-system/sw/bin/systemctl";
-          options = [ "NOPASSWD" "SETENV" ];
-        }
-      ];
-    }
-    {
-      users = [ moritz ];
-      commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" "SETENV" ];
-        }
-      ];
-    }
-  ];
+  # Headless-Dev / Hardware-Sandbox: wheel ohne Passwort (Grok-Agent, moritz, Notfall-User)
+  security.sudo.wheelNeedsPassword = lib.mkForce false;
 
   assertions = [
     {

@@ -98,7 +98,7 @@ in
         ];
       };
 
-      services.caddy.virtualHosts."git.${domain}" = {
+      services.caddy.virtualHosts."git.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxyUnixSecurity sockets.forgejo;
       };
     })
@@ -126,7 +126,7 @@ in
         dockerCompat = true;
       };
 
-      services.caddy.virtualHosts."semaphore.${domain}" = {
+      services.caddy.virtualHosts."semaphore.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso cfgSemaphore.port;
       };
     })
@@ -140,7 +140,7 @@ in
         };
 
         caddy.virtualHosts = {
-          "admin.${domain}" = {
+          "admin.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
             extraConfig = caddy.proxySso cfgCockpit.port;
           };
 

@@ -428,7 +428,7 @@ in
         '';
       };
 
-      services.caddy.virtualHosts."dashboard.${domain}" = {
+      services.caddy.virtualHosts."dashboard.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySecurity portHomepage;
       };
     })
@@ -448,7 +448,7 @@ in
         "d /var/lib/filebrowser 0750 filebrowser filebrowser -"
       ];
 
-      services.caddy.virtualHosts."files.${domain}" = {
+      services.caddy.virtualHosts."files.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso cfgFilebrowser.port;
       };
 
@@ -489,6 +489,7 @@ in
         port = cfgLinkwarden.port;
         mode = "sso";
         caddyOnly = true;
+        persistDirs = [ "/var/lib/linkwarden" ];
       })
 
       {
@@ -514,7 +515,7 @@ in
         };
       };
 
-      services.caddy.virtualHosts."ai.${domain}" = {
+      services.caddy.virtualHosts."ai.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso cfgOpenWebui.port;
       };
 

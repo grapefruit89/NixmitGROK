@@ -5,10 +5,8 @@
 #   purpose: Fabrik für *arr-Apps — User, systemd, Caddy, RAM-Limits
 #   docs:
 #     - docs/memory_oom.md
-#     - docs/SPEC_REGISTRY.md
 #   lib:
 #     - lib/memory-policy.nix
-#     - lib/service-factory.nix
 #   services:
 #     - sonarr
 #     - radarr
@@ -38,6 +36,7 @@ in
       gid,
       useVpnKillSwitch ? false,
       metadataDir ? null,
+      upstreamHost ? "127.0.0.1",
     }:
     lib.mkMerge [
       {
@@ -60,9 +59,10 @@ in
 
       (factory.mkService {
         inherit config;
-        inherit name port;
+        inherit name port upstreamHost;
         mode = "sso";
         hardeningProfile = "dotnet";
+        persistDirs = [ dataDir ];
         readWritePaths = [
           dataDir
           "/data/media"
@@ -80,7 +80,9 @@ in
         };
       })
 
-      (lib.mkIf useVpnKillSwitch {
+      (lib.mkIf (
+        useVpnKillSwitch && !(config.my.services.vpn-confinement.enable or false)
+      ) {
         systemd.services.${name} = vpnKillSwitchAttrs;
       })
     ];

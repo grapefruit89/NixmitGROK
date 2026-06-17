@@ -303,7 +303,11 @@ in
       lib.mkIf cfg.enable {
         services.fail2ban = {
           enable = true;
-          inherit (cfg) banaction;
+          banaction =
+            if config.my.security.firewall.enable then
+              lib.mkForce "nftables-f2b-set"
+            else
+              cfg.banaction;
           inherit (cfg) bantime;
           inherit (cfg) maxretry;
           bantime-increment = {
@@ -363,6 +367,16 @@ in
           [Definition]
           failregex = ^.*"remote_ip":"<ADDR>".*"status":(401|403).*$
           journalmatch = _SYSTEMD_UNIT=caddy.service
+        '';
+
+        environment.etc."fail2ban/action.d/nftables-f2b-set.conf".text = lib.mkIf config.my.security.firewall.enable ''
+          [Definition]
+          type = firewall
+          actionstart = nft add set inet filter f2b_blocked_ipv4 { type ipv4_addr \; flags timeout \; timeout 1h \; } 2>/dev/null || true
+          actionstop =
+          actioncheck = nft list set inet filter f2b_blocked_ipv4 >/dev/null 2>&1
+          actionban = nft add element inet filter f2b_blocked_ipv4 { <ip> }
+          actionunban = nft delete element inet filter f2b_blocked_ipv4 { <ip> }
         '';
       }
     )

@@ -7,7 +7,7 @@
 #     - wiring
 #     - q958
 # ---
-{ ... }:
+{ lib, ... }:
 
 let
   p = import ./profile.nix;
@@ -18,8 +18,17 @@ in
   imports = [
     ./hardware.nix
     ../../modules/00-core.nix
+    ../../modules/05-uid-registry.nix
+    ../../modules/05-services-spec.nix
+    ../../modules/05-storage-policy.nix
+    ../../modules/05-forbidden-tech.nix
+    ../../modules/05-runtime-guard.nix
+    ../../modules/05-sops.nix
+    ../../modules/05-alerting.nix
     ../../modules/25-kernel-policy.nix
     ../../modules/10-network.nix
+    ../../modules/10-ingress.nix
+    ../../modules/10-vpn-confinement.nix
     ../../modules/10-gateway.nix
     ../../modules/15-firewall.nix
     ../../modules/20-security.nix
@@ -65,6 +74,14 @@ in
         lanIP = p.network.lan.ip;
         tailscaleIP = p.network.tailscaleIP;
       };
+      storage = {
+        tierB.mountPoint = p.storage.fastPoolMountPoint;
+        tierC = {
+          mountPoint = p.storage.tierC.mountPoint;
+          labels = p.storage.tierC.labels;
+          legacyPrefixes = p.storage.tierC.legacyPrefixes;
+        };
+      };
       ddns = {
         zone = p.network.ddns.zone;
         record = p.network.ddns.record;
@@ -72,6 +89,24 @@ in
     };
 
     ports.ssh = p.network.sshPort;
+
+    services.vpn-confinement = {
+      namespaces.usenet = {
+        wgConf = "/var/lib/secrets/privado.netns.conf";
+        address = p.network.privado.address;
+        dns = p.network.privado.dns;
+        killSwitch = true;
+        healthcheck.endpoint = builtins.elemAt (lib.splitString ":" p.network.privado.endpoint) 0;
+        accessibleFrom = [
+          "192.168.15.0/24"
+          "${p.network.lan.ip}/32"
+        ];
+        services = [
+          "sabnzbd"
+          "prowlarr"
+        ];
+      };
+    };
 
     core.nix-tuning = {
       maxJobs = p.nix.maxJobs;
@@ -84,6 +119,11 @@ in
       persistMountPoint = p.storage.impermanence.mountPoint;
     };
 
+    alerting = {
+      ntfyTopic = p.alerting.ntfyTopic;
+      webhookUrl = p.alerting.webhookUrl;
+    };
+
     security = {
       sovereign-unlock = {
         luksDevice = p.storage.luks.device;
@@ -94,6 +134,8 @@ in
         lanCidrs = p.security.firewall.lanCidrs;
         blockedCountries = p.security.firewall.blockedCountries;
         allowLanDns = p.security.firewall.allowLanDns;
+        lanInterface = p.network.lan.interface;
+        tailscaleNotrack = p.security.firewall.tailscaleNotrack;
       };
     };
 

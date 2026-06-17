@@ -43,11 +43,16 @@ in
   my.security = {
     sovereign-unlock.enable =
       if p.storage.luks.device == "" then lib.mkForce false else erstAb 8;
-    firewall.enable = erstAb 8;
+    firewall = {
+      enable = erstAb 8;
+      skuidSegmentation.enable = erstAb 8;
+    };
     crowdsec.enable = erstAb 8;
     fail2ban.enable = erstAb 8;
     dropbear-rescue.enable = erstAb 8;
   };
+
+  my.alerting.enable = erstAb 8;
 
   my.observability.enable = erstAb 4;
   my.impermanence.enable = erstAb 9;
@@ -95,6 +100,13 @@ in
 
   services.hermes-agent.enable = erstAb 7;
   services.caddy.enable = erstAb 5;
+  my.ingress.fromSpec.enable = erstAb 5;
+
+  my.security.runtime-guard.enable = erstAb 8;
+
+  my.services.vpn-confinement.enable = erstAb 6;
+
+  my.sops.enable = erstAb 9;
 
   my.services.ddns-updater.enable =
     if p.network.ddns.enable then erstAb 5 else lib.mkForce false;

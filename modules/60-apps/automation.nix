@@ -67,7 +67,7 @@ in
 
       systemd.services.paperless-task-queue.serviceConfig = memory.paperless.service;
 
-      services.caddy.virtualHosts."paperless.${domain}" = {
+      services.caddy.virtualHosts."paperless.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso cfgPaperless.port;
       };
     })
@@ -97,7 +97,7 @@ in
         RestrictAddressFamilies = lib.mkForce [ "AF_INET" "AF_INET6" "AF_UNIX" ];
       };
 
-      services.caddy.virtualHosts."n8n.${domain}" = {
+      services.caddy.virtualHosts."n8n.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySso cfgN8n.port;
       };
     })

@@ -89,7 +89,7 @@ in
       };
       users.groups.ddns-updater = { };
 
-      services.caddy.virtualHosts.${dnsMap.host "ddns-updater"} = {
+      services.caddy.virtualHosts.${dnsMap.host "ddns-updater"} = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = factory.mkCaddyExtra {
           mode = "sso";
           port = portDdns;

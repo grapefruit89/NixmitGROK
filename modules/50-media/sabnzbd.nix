@@ -19,9 +19,15 @@
 let
   caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   memory = import ../../lib/memory-policy.nix { inherit lib; };
+  vpnConn = import ../../lib/vpn-connection.nix { inherit lib; };
   cfgSabnzbd = config.my.services.sabnzbd;
+  vpnCfg = config.my.services.vpn-confinement;
   domain = config.my.configs.identity.domain;
   portSabnzbd = config.my.ports.sabnzbd;
+  uids = config.my.users.registry;
+  gids = config.my.groups.registry;
+  sabUpstream = vpnConn.connectionAddress vpnCfg "sabnzbd";
+  sabInVpn = vpnConn.isVpnConfined vpnCfg "sabnzbd";
   vpnKillSwitch = import ../../lib/vpn-killswitch.nix {
     inherit lib;
     privadoEnabled = config.my.services.privado-vpn.enable or false;
@@ -38,7 +44,7 @@ in
       settings = {
         misc = {
           port = portSabnzbd;
-          host = "127.0.0.1";
+          host = if sabInVpn then "0.0.0.0" else "127.0.0.1";
         };
       };
     };
@@ -47,16 +53,16 @@ in
     users = {
       groups = {
         media = { };
-        sabnzbd.gid = lib.mkDefault 194;
+        sabnzbd.gid = lib.mkDefault gids.sabnzbd;
       };
       users.sabnzbd = {
-        uid = lib.mkDefault 984;
+        uid = lib.mkDefault uids.sabnzbd;
         extraGroups = [ "media" ];
       };
     };
 
     systemd.services.sabnzbd = lib.mkMerge [
-      vpnKillSwitch
+      (lib.mkIf (!(config.my.services.vpn-confinement.enable or false)) vpnKillSwitch)
       {
         serviceConfig = lib.mkMerge [
           (memory.sabnzbd { })
@@ -79,8 +85,8 @@ in
       }
     ];
 
-    services.caddy.virtualHosts."sabnzbd.${domain}" = {
-      extraConfig = caddy.proxyTailscaleSso portSabnzbd;
+    services.caddy.virtualHosts."sabnzbd.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
+      extraConfig = caddy.proxyTailscaleSso portSabnzbd sabUpstream;
     };
   };
 }

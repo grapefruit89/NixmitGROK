@@ -2,10 +2,12 @@
 # meta:
 #   layer: 3
 #   role: module
-#   purpose: nftables L4 — Geo-Block, Rate-Limits, CrowdSec-Sets
+#   purpose: nftables L4 — checkRuleset, WAN-Härtung, skuid, CrowdSec/Fail2ban
 #   docs:
-#     - docs/adr/002-ipv6-homelab-v4-only.md
-#     - docs/AUDIT-blocky-caddy-ipv6.md
+#     - docs/adr/008-nftables-l4-hardening.md
+#     - docs/guides/GUIDE-nftables-hardening.md
+#   lib:
+#     - lib/nftables-rules.nix
 #   services:
 #     - nftables
 #   tags:
@@ -16,16 +18,8 @@
 
 let
   cfg = config.my.security.firewall;
-  sshPort = config.my.ports.ssh;
-  lanIP = config.my.configs.server.lanIP;
-  sshPorts =
-    (if config.my.mode == "development" then [ 22 ] else [ sshPort ])
-    ++ lib.optional (
-      (config.my.security ? dropbear-rescue) && config.my.security.dropbear-rescue.enable
-    ) config.my.security.dropbear-rescue.port;
-
-  lanCidrList = lib.concatStringsSep ", " cfg.lanCidrs;
   blockedCountryList = lib.concatStringsSep " " cfg.blockedCountries;
+  ruleset = import ../lib/nftables-rules.nix { inherit lib config; };
 
 in
 {
@@ -36,6 +30,18 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ "192.168.0.0/16" "10.0.0.0/8" "172.16.0.0/12" ];
       description = "Vertrauenswürdige LAN-CIDRs — vor Geo-Block akzeptiert.";
+    };
+
+    lanInterface = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "Physisches LAN-Interface (z. B. eno1). Leer = Single-NIC ohne iifname-Check.";
+    };
+
+    wanInterface = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "WAN-Interface für Bogon-Drop. Leer = Homelab Single-NIC (nur Loopback/Link-Local).";
     };
 
     blockedCountries = lib.mkOption {
@@ -61,6 +67,16 @@ in
       default = true;
       description = "IPv6-Input-Regeln (CrowdSec v6). false wenn LAN nur v4 (Tailscale bleibt über iifname tailscale0).";
     };
+
+    tailscaleNotrack = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "raw-Table NOTRACK für tailscale0 — weniger conntrack-CPU.";
+    };
+
+    skuidSegmentation = {
+      enable = lib.mkEnableOption "meta skuid Micro-Segmentation (UID-Registry, Stufe 8+)";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -68,102 +84,8 @@ in
 
     networking.nftables = {
       enable = true;
-      ruleset = ''
-        table inet filter {
-          set geoip_blocked {
-            type ipv4_addr
-            flags interval
-          }
-
-          set crowdsec_blocked_ipv4 {
-            type ipv4_addr
-            flags interval
-          }
-
-          ${lib.optionalString cfg.ipv6 ''
-          set crowdsec_blocked_ipv6 {
-            type ipv6_addr
-            flags interval
-          }
-          ''}
-
-          set ssh_meter {
-            type ipv4_addr
-            flags dynamic, timeout
-            timeout 1m
-          }
-
-          set web_meter {
-            type ipv4_addr
-            flags dynamic, timeout
-            timeout 1m
-          }
-
-          chain input {
-            type filter hook input priority filter; policy drop;
-
-            # Trusted paths (vor Geo/Rate)
-            iifname lo accept
-            iifname tailscale0 accept comment "Tailscale"
-            iifname privado accept comment "Privado WG egress"
-
-            ct state established,related accept
-            ct state invalid drop comment "Invalid TCP state"
-
-            ip frag-off & 0x3fff != 0 drop comment "Fragments"
-
-            # LAN: voller Zugang (Apps, Jellyfin, Blocky-DNS) — kein Geo
-            ip saddr { ${lanCidrList} } accept comment "LAN trusted"
-
-            # WAN: Geo-Block (nur öffentliche IPs, LAN bereits oben)
-            ip saddr @geoip_blocked drop comment "Geo blocklist"
-
-            ip saddr @crowdsec_blocked_ipv4 drop comment "CrowdSec IPv4"
-            ${lib.optionalString cfg.ipv6 ''
-            ip6 saddr @crowdsec_blocked_ipv6 drop comment "CrowdSec IPv6"
-            ''}
-            ${lib.optionalString (
-              !cfg.ipv6 && config.my.configs.network.ipv6.disableOnInterfaces != [ ]
-            ) ''
-            iifname { ${lib.concatStringsSep ", " (
-              map (i: "\"${i}\"") config.my.configs.network.ipv6.disableOnInterfaces
-            )} } meta nfproto ipv6 drop comment "IPv6 off on listed LAN interfaces"
-            ''}
-
-            icmp type echo-request limit rate over 10/second drop
-            icmp type echo-request accept
-            icmp type { redirect, router-advertisement } drop
-            ip protocol icmp accept
-
-            tcp flags & (syn|rst|ack) == syn limit rate over 20/second burst 40 packets drop comment "SYN flood"
-
-            udp dport ${toString config.my.services.tailscale.port} accept comment "Tailscale UDP"
-
-            ${lib.optionalString cfg.allowLanDns ''
-            udp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN"
-            tcp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN TCP"
-            ''}
-
-            tcp dport { 80, 443 } ct state new update @web_meter { ip saddr limit rate over ${cfg.webRateLimit} } drop
-            tcp dport { 80, 443 } accept
-
-            tcp dport { ${lib.concatStringsSep ", " (map toString sshPorts)} } ct state new update @ssh_meter { ip saddr limit rate over 10/minute } drop
-            tcp dport { ${lib.concatStringsSep ", " (map toString sshPorts)} } accept
-
-            limit rate 5/second log prefix "nftables-dropped: "
-          }
-
-          chain forward {
-            type filter hook forward priority filter; policy drop;
-            iifname tailscale0 accept
-            oifname tailscale0 accept
-          }
-
-          chain output {
-            type filter hook output priority filter; policy accept;
-          }
-        }
-      '';
+      checkRuleset = true;
+      ruleset = ruleset;
     };
 
     systemd.services.nftables-geoip-update = {

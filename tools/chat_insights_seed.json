@@ -278,5 +278,65 @@
     "rollout_stufe": 6,
     "consensus": "claude",
     "source_path": "claude/unraid/claude_answers.md"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "user_meta",
+    "title": "Dendritic — eine Datei pro Dienst, Sonarr+Radarr zusammen",
+    "content": "modules/50-media/: sonarr-radarr.nix, readarr.nix, prowlarr.nix, sabnzbd.nix. arr-stack.nix entfernt. .enable nur rollout.nix. Kein NIXMETA-Auto-Import.",
+    "status": "accepted",
+    "rollout_stufe": 6,
+    "consensus": "user_meta",
+    "source_path": "docs/adr/007-dendritic-one-file-per-service.md"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "consensus",
+    "title": "nftables checkRuleset + f2b_blocked_ipv4 Set",
+    "content": "lib/nftables-rules.nix + 15-firewall.nix: checkRuleset=true, split chains in_trusted/in_lan/in_wan, Fail2ban banaction nftables-f2b-set → inet filter f2b_blocked_ipv4.",
+    "status": "accepted",
+    "rollout_stufe": 8,
+    "consensus": "all",
+    "source_path": "docs/adr/008-nftables-l4-hardening.md"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "meta skuid Micro-Segmentation Stufe 8+",
+    "content": "UID-Registry: Prowlarr/SAB egress nur VPN/LAN; Sonarr/Radarr/Readarr input nur LAN+Tailscale; Postgres/Valkey localhost only. Option skuidSegmentation.enable.",
+    "status": "accepted",
+    "rollout_stufe": 8,
+    "consensus": "grok",
+    "source_path": "docs/guides/GUIDE-nftables-hardening.md"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "claude",
+    "title": "Jellyfin Mediathek ReadOnly — BindReadOnlyPaths",
+    "content": "/data/media aus readWritePaths entfernt, in readOnlyPaths (mkStreamer). Transcode/Cache bleiben RW.",
+    "status": "accepted",
+    "rollout_stufe": 6,
+    "consensus": "claude",
+    "source_path": "modules/50-media/jellyfin.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "deepseek",
+    "title": "Blocky StevenBlack — DNS Adblock nicht nftables",
+    "content": "blocking.blackLists: StevenBlack hosts, AdAway, Easyprivacy. Rollen: Blocky=LAN-DNS+Adblock, nftables=L4 Geo/Rate.",
+    "status": "accepted",
+    "rollout_stufe": 2,
+    "consensus": "deepseek",
+    "source_path": "modules/10-network.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "SRE Alerting ntfy/Webhook optional Stufe 8",
+    "content": "05-alerting.nix: OnFailure für usenet.service und restic-backups. URLs in profile.local alerting.ntfyTopic/webhookUrl.",
+    "status": "accepted",
+    "rollout_stufe": 8,
+    "consensus": "grok",
+    "source_path": "modules/05-alerting.nix"
   }
 ]

@@ -12,6 +12,13 @@ TARGET_COUNTRY_CODE=$(echo "$TARGET_UI_CULTURE" | cut -d- -f2 | tr '[:lower:]' '
 echo "Target UI Culture: $TARGET_UI_CULTURE"
 echo "Target Country Code: $TARGET_COUNTRY_CODE"
 
+VPN_HOST="${VPN_NS_ADDRESS:-127.0.0.1}"
+HOST_HOST="${HOST_BRIDGE_ADDRESS:-127.0.0.1}"
+PROWLARR_PORT="${PORT_PROWLARR:-9696}"
+SONARR_PORT="${PORT_SONARR:-8989}"
+RADARR_PORT="${PORT_RADARR:-7878}"
+SABNZBD_PORT="${PORT_SABNZBD:-8080}"
+
 # 1. Load Declarative API keys from Local Secrets
 PROWLARR_KEY=$(cat /var/lib/secrets/prowlarr_api_key 2>/dev/null || echo "prowlarr_placeholder_key")
 SONARR_KEY=$(cat /var/lib/secrets/sonarr_api_key 2>/dev/null || echo "sonarr_placeholder_key")
@@ -256,35 +263,10 @@ EOF
   systemctl restart sabnzbd.service || true
 fi
 
-# 3. Wait for Prowlarr, Sonarr, Radarr, and SABnzbd APIs to be responsive
-echo "Waiting for Prowlarr to be responsive on port 9696..."
-for i in {1..30}; do
-  curl -s -o /dev/null http://127.0.0.1:9696 && break
-  sleep 2
-done
-
-echo "Waiting for Sonarr to be responsive on port 8989..."
-for i in {1..30}; do
-  curl -s -o /dev/null http://127.0.0.1:8989 && break
-  sleep 2
-done
-
-echo "Waiting for Radarr to be responsive on port 7878..."
-for i in {1..30}; do
-  curl -s -o /dev/null http://127.0.0.1:7878 && break
-  sleep 2
-done
-
-echo "Waiting for SABnzbd to be responsive on port 8080..."
-for i in {1..30}; do
-  curl -s -o /dev/null http://127.0.0.1:8080 && break
-  sleep 2
-done
-
-echo "All APIs are fully online and responsive."
+# 3. APIs werden von sync.nix (wait-for-api) abgewartet
 
 # 4. Configure SceneNZBs Indexer in Prowlarr
-CURRENT_INDEXERS=$(curl -s -H "X-Api-Key: $PROWLARR_KEY" http://127.0.0.1:9696/api/v1/indexer)
+CURRENT_INDEXERS=$(curl -s -H "X-Api-Key: $PROWLARR_KEY" "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/indexer")
 HAS_SCENE=$(echo "$CURRENT_INDEXERS" | jq '.[] | select(.name == "SceneNZBs" or .name == "Scence")')
 
 if [ -z "$HAS_SCENE" ]; then
@@ -313,14 +295,14 @@ EOF
     -H "X-Api-Key: $PROWLARR_KEY" \
     -H "Content-Type: application/json" \
     -d "$PAYLOAD" \
-    http://127.0.0.1:9696/api/v1/indexer
+    "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/indexer"
   echo "SceneNZBs indexer configured successfully."
 else
   echo "SceneNZBs/Scence is already present. Skipping creation."
 fi
 
 # 5. Configure Sonarr Application in Prowlarr
-CURRENT_APPS=$(curl -s -H "X-Api-Key: $PROWLARR_KEY" http://127.0.0.1:9696/api/v1/applications)
+CURRENT_APPS=$(curl -s -H "X-Api-Key: $PROWLARR_KEY" "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/applications")
 HAS_SONARR=$(echo "$CURRENT_APPS" | jq '.[] | select(.name == "Sonarr")')
 
 if [ -z "$HAS_SONARR" ] && [ -n "$SONARR_KEY" ]; then
@@ -336,11 +318,11 @@ if [ -z "$HAS_SONARR" ] && [ -n "$SONARR_KEY" ]; then
   "fields": [
     {
       "name": "prowlarrUrl",
-      "value": "http://127.0.0.1:9696"
+      "value": "http://${VPN_HOST}:${PROWLARR_PORT}"
     },
     {
       "name": "baseUrl",
-      "value": "http://127.0.0.1:8989"
+      "value": "http://${HOST_HOST}:${SONARR_PORT}"
     },
     {
       "name": "apikey",
@@ -354,7 +336,7 @@ EOF
     -H "X-Api-Key: $PROWLARR_KEY" \
     -H "Content-Type: application/json" \
     -d "$SONARR_PAYLOAD" \
-    http://127.0.0.1:9696/api/v1/applications
+    "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/applications"
   echo "Sonarr application configured successfully."
 else
   echo "Sonarr is already present or API key missing. Skipping creation."
@@ -376,11 +358,11 @@ if [ -z "$HAS_RADARR" ] && [ -n "$RADARR_KEY" ]; then
   "fields": [
     {
       "name": "prowlarrUrl",
-      "value": "http://127.0.0.1:9696"
+      "value": "http://${VPN_HOST}:${PROWLARR_PORT}"
     },
     {
       "name": "baseUrl",
-      "value": "http://127.0.0.1:7878"
+      "value": "http://${HOST_HOST}:${RADARR_PORT}"
     },
     {
       "name": "apikey",
@@ -394,7 +376,7 @@ EOF
     -H "X-Api-Key: $PROWLARR_KEY" \
     -H "Content-Type: application/json" \
     -d "$RADARR_PAYLOAD" \
-    http://127.0.0.1:9696/api/v1/applications
+    "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/applications"
   echo "Radarr application configured successfully."
 else
   echo "Radarr is already present or API key missing. Skipping creation."
@@ -415,8 +397,8 @@ if [ -n "$SONARR_KEY" ] && [ -n "$SAB_KEY" ]; then
   "implementation": "Sabnzbd",
   "configContract": "SabnzbdSettings",
   "fields": [
-    { "name": "host", "value": "127.0.0.1" },
-    { "name": "port", "value": 8080 },
+    { "name": "host", "value": "${VPN_HOST}" },
+    { "name": "port", "value": ${SABNZBD_PORT} },
     { "name": "useSsl", "value": false },
     { "name": "apiKey", "value": "$SAB_KEY" },
     { "name": "category", "value": "tv" }
@@ -450,8 +432,8 @@ if [ -n "$RADARR_KEY" ] && [ -n "$SAB_KEY" ]; then
   "implementation": "Sabnzbd",
   "configContract": "SabnzbdSettings",
   "fields": [
-    { "name": "host", "value": "127.0.0.1" },
-    { "name": "port", "value": 8080 },
+    { "name": "host", "value": "${VPN_HOST}" },
+    { "name": "port", "value": ${SABNZBD_PORT} },
     { "name": "useSsl", "value": false },
     { "name": "apiKey", "value": "$SAB_KEY" },
     { "name": "category", "value": "movies" }
@@ -509,5 +491,5 @@ curl -s -X POST \
   -H "X-Api-Key: $PROWLARR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "ApplicationsSync"}' \
-  http://127.0.0.1:9696/api/v1/command
+  "http://${VPN_HOST}:${PROWLARR_PORT}/api/v1/command"
 echo "Sync command triggered. Centralized locale sync completed."

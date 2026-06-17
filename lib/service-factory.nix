@@ -3,7 +3,7 @@
 #   id: NIXH-05-LIB-002
 #   layer: 5
 #   role: lib
-#   purpose: mkService — systemd-Hardening + Caddy-Ingress aus dns-map
+#   purpose: mkService / mkStreamer — systemd-Hardening, persistDirs, optional Caddy
 #   docs:
 #     - docs/SPEC_REGISTRY.md
 #     - modules/60-apps/SERVICE_TEMPLATE.nix
@@ -24,11 +24,10 @@ let
     {
       readWritePaths ? [ ],
       privateDevices ? true,
-      profile ? "full", # full | dotnet | node
+      profile ? "full", # full | dotnet | node | streamer
       extra ? { },
     }:
     let
-      # .NET/Node crashen mit ~@resources oder leerem CapabilityBoundingSet (fchown → SYS)
       base =
         {
           ProtectSystem = lib.mkForce "strict";
@@ -39,7 +38,7 @@ let
           ProtectKernelTunables = lib.mkForce true;
           ProtectKernelModules = lib.mkForce true;
           ProtectControlGroups = lib.mkForce true;
-          RestrictRealtime = lib.mkForce true;
+          RestrictRealtime = lib.mkForce (profile != "streamer");
           RestrictSUIDSGID = lib.mkForce true;
           LockPersonality = lib.mkForce true;
           RestrictAddressFamilies = lib.mkForce [ "AF_INET" "AF_INET6" "AF_UNIX" ];
@@ -52,6 +51,9 @@ let
         }
         // lib.optionalAttrs (profile == "dotnet") {
           SystemCallFilter = lib.mkForce [ "@system-service" "~@privileged" ];
+        }
+        // lib.optionalAttrs (profile == "streamer") {
+          UMask = lib.mkForce "0002";
         };
     in
     lib.mkMerge [ base extra ];
@@ -69,7 +71,7 @@ let
         if socketPath != null then
           {
             sso = caddy.proxyUnixSso socketPath;
-            "tailscale-sso" = caddy.proxyUnixTailscaleSso socketPath;
+            "tailscale-sso" = caddy.proxyTailscaleSso socketPath;
             security = caddy.proxyUnixSecurity socketPath;
             direct = caddy.proxyUnixDirect socketPath;
           }
@@ -92,8 +94,17 @@ let
     (if builtins.hasAttr mode proxy then proxy.${mode} else throw "mkCaddyExtra: unbekannter mode '${mode}'")
     + lib.optionalString (extra != "") "\n${extra}";
 
+  defaultPersistDirs = name: persistDirs: cacheDir:
+    if persistDirs != [ ] then
+      persistDirs
+    else
+      lib.filter (p: p != null) [
+        "/var/lib/${name}"
+        cacheDir
+      ];
+
 in
-{
+rec {
   inherit systemdHardening mkCaddyExtra;
 
   mkService =
@@ -112,6 +123,10 @@ in
       extraSystemd ? { },
       extraCaddy ? "",
       caddyOnly ? false,
+      persist ? true,
+      persistDirs ? [ ],
+      cacheDir ? "/var/cache/${name}",
+      manageIngress ? null,
     }:
     let
       domain = config.my.configs.identity.domain;
@@ -121,6 +136,9 @@ in
         inherit mode port socketPath upstreamHost;
         extra = extraCaddy;
       };
+      fromSpec = config.my.ingress.fromSpec.enable or false;
+      doIngress = if manageIngress != null then manageIngress else !fromSpec;
+      paths = lib.unique (defaultPersistDirs name persistDirs cacheDir);
     in
     lib.mkMerge [
       (lib.mkIf (!caddyOnly) {
@@ -135,10 +153,67 @@ in
           ++ [ extraSystemd ]
         );
       })
-      {
+      (lib.mkIf (persist && paths != [ ]) {
+        my.impermanence.extraPaths = paths;
+      })
+      (lib.mkIf (doIngress && !caddyOnly) {
         services.caddy.virtualHosts.${vhost} = {
           extraConfig = caddyExtra;
         };
-      }
+      })
     ];
+
+  mkStreamer =
+    {
+      config,
+      name,
+      port,
+      readWritePaths ? [ ],
+      readOnlyPaths ? [ ],
+      useGPU ? false,
+      memoryPolicy ? null,
+      extraSystemd ? { },
+      persistDirs ? [ "/var/lib/${name}" "/var/cache/${name}" ],
+      manageIngress ? false,
+      mode ? "sso",
+    }:
+    let
+      gpuExtra =
+        if useGPU then
+          {
+            PrivateDevices = lib.mkForce false;
+            DeviceAllow = [
+              "/dev/dri rw"
+              "/dev/dri/card0 rw"
+              "/dev/dri/renderD128 rw"
+            ];
+          }
+        else
+          { };
+    in
+    mkService {
+      inherit
+        config
+        name
+        port
+        mode
+        memoryPolicy
+        persistDirs
+        manageIngress
+        ;
+      hardeningProfile = "streamer";
+      privateDevices = !useGPU;
+      readWritePaths = readWritePaths;
+      extraSystemd = lib.mkMerge [
+        {
+          Restart = lib.mkForce "always";
+          RestartSec = lib.mkForce "5s";
+          RuntimeDirectory = lib.mkForce "${name}-transcode";
+          RuntimeDirectoryMode = lib.mkForce "0700";
+          ReadOnlyPaths = readOnlyPaths;
+        }
+        gpuExtra
+        extraSystemd
+      ];
+    };
 }

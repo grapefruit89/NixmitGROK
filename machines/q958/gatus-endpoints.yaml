@@ -1,3 +1,5 @@
+# DEPRECATED — generiert jetzt via lib/gatus-endpoints.nix → modules/40-observability.nix
+# Referenz/Backup; aktiv ist environment.etc."gatus/endpoints.yaml" aus dem Nix-Generator.
 # Stufe 4 — nur Dienste, die ab Rollout 2/4 aktiv sind (kein mergerfs/media/apps).
 web:
   address: "127.0.0.1"

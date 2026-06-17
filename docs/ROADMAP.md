@@ -15,6 +15,26 @@ Steuerung: `machines/q958/profile.nix` → `rollout.stufe` (eine Zahl, rebuild, 
 
 ---
 
+## mynixos-v5 Übernahme (grapefruit89/mynixos-v5)
+
+Quelle: Portierung bewährter Patterns ohne 5-Schichten-Bruch. **`.enable` bleibt nur in `rollout.nix`.**
+
+| Prio | Thema | Status | Pfade |
+|------|-------|--------|-------|
+| 1 | Service-Spec + Port-Duplikat-Assertion | [x] | `lib/services-spec.nix`, `modules/05-services-spec.nix` |
+| 2 | Tier-C-Policy-Assertions | [x] | `lib/storage-policy.nix`, `modules/05-storage-policy.nix` |
+| 3 | Forbidden-tech subset (Docker/Cron/iptables) | [x] | `lib/forbidden-tech.nix`, `modules/05-forbidden-tech.nix` |
+| 4 | `mkService` + `persistDirs` | [x] | `lib/service-factory.nix`, `modules/30-storage.nix` |
+| 5 | Caddy-Ingress aus Spec (manuelle vHosts abbauen) | [x] | `lib/caddy-ingress.nix`, `modules/10-ingress.nix` |
+| 6 | `runtime-guard.nix` ab Stufe 8 | [x] | `modules/05-runtime-guard.nix` |
+| 7 | VPN-NetNS Usenet-Stack | [x] | `modules/10-vpn-confinement.nix` (Stufe 6+, ersetzt UID-Routing) |
+| 8 | `mkStreamer` Jellyfin | [x] | `lib/service-factory.nix`, `jellyfin.nix` |
+| 9 | SOPS nach v5-Muster | [~] | `modules/05-sops.nix` + flake `sops-nix` — aktiv ab Stufe 9 |
+
+**Bewusst nicht übernommen:** dendritisches Auto-Import, `registry.nix`-Defaults, Tailscale-Verbot, Caddy `dynamic_dns`, NIXMETA 2.0.
+
+---
+
 ## Legende
 
 - [x] erledigt / fest verworfen
@@ -50,7 +70,7 @@ Quelle: homelab_server USB → `lib/caddy-snippets.nix`
 - [x] Gatus `blocky-dns` Gruppe `critical`
 - [x] **Jellyfin Client-Split** — Browser → `sso_auth`, Apps → `X-Emby-Authorization`
 - [x] `streamer_headers` + `flush_interval -1` + `keepalive off`
-- [ ] Rebuild testen: `systemctl status caddy blocky`
+- [x] Rebuild testen: `systemctl status caddy blocky`
 - [ ] Forward-Auth-Cache ~5 min (Performance, nicht Survival)
 **Caddy macht:** TLS, Reverse-Proxy, SSO für Browser-Apps, Streaming-Headers.  
 **Caddy macht NICHT:** Geo, Rate-Limit WAN (→ nftables), Adblock (→ Blocky).
@@ -96,7 +116,7 @@ Code: `modules/50-media/jellyfin.nix`.
 - [x] Kill-Switch `lib/vpn-killswitch.nix`
 - [x] `table=off` + UID-Policy-Routing (969, 984)
 - [x] `privado-vpn.enable = erstAb 6`
-- [ ] Rebuild Stufe 6 + VPN-Test (Key rotieren nach Test)
+- [x] Rebuild Stufe 6 + VPN-Test (Key rotieren nach Test)
 
 ---
 

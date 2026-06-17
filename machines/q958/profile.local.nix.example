@@ -5,6 +5,11 @@
     # optional — leer = kein Healthchecks.io-Ping
     healthcheckUrl = "";
   };
+  alerting = {
+    # optional — Stufe 8+, leer = kein ntfy/Webhook (OnFailure nur wenn gesetzt)
+    ntfyTopic = "";
+    webhookUrl = "";
+  };
   access = {
     emergency = {
       # nixos-rebuild: mkpasswd -m sha-512

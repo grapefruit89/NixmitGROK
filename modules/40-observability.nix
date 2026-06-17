@@ -28,6 +28,7 @@ let
   cfgCrowdsec = config.my.security.crowdsec;
   domain = config.my.configs.identity.domain;
   yaml = pkgs.formats.yaml { };
+  gatusLib = import ../lib/gatus-endpoints.nix { inherit lib config; };
 
 in
 {
@@ -74,6 +75,8 @@ in
   config = lib.mkMerge [
     # ─── SECTION 1: GATUS MONITORING ──────────────────────────────────────────
     (lib.mkIf cfgGatus.enable {
+      environment.etc."gatus/endpoints.yaml".source =
+        (yaml.generate "gatus-endpoints.yaml" gatusLib).outPath;
 
       users.users.monitoring = {
         isSystemUser = true;
@@ -183,8 +186,8 @@ in
             [ -d "$dir" ] || continue
             owner=$(stat -c "%u:%g" "$dir")
             perms=$(stat -c "%a" "$dir")
-            if [ "$owner" != "0:169" ]; then
-              echo "DRIFT: Directory $dir is owned by $owner, expected 0:169"
+            if [ "$owner" != "0:${toString config.my.groups.registry.media}" ]; then
+              echo "DRIFT: Directory $dir is owned by $owner, expected 0:${toString config.my.groups.registry.media}"
               drift_detected=1
             fi
             if [ "$perms" != "775" ] && [ "$perms" != "2775" ]; then
@@ -282,7 +285,7 @@ in
           };
         };
 
-        caddy.virtualHosts."gatus.${domain}" = {
+        caddy.virtualHosts."gatus.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
           extraConfig = caddy.proxyTailscaleSso cfgGatus.port;
         };
       };
@@ -439,7 +442,7 @@ in
           };
         };
 
-        caddy.virtualHosts."grafana.${domain}" = {
+        caddy.virtualHosts."grafana.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
           extraConfig = caddy.proxyUnixTailscaleSso sockets.grafana;
         };
       };

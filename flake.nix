@@ -27,9 +27,14 @@
       url = "github:NousResearch/hermes-agent";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, impermanence, home-manager, hermes-agent, ... }:
+  outputs = { self, nixpkgs, impermanence, home-manager, hermes-agent, sops-nix, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -51,6 +56,7 @@
             impermanence.nixosModules.impermanence
             home-manager.nixosModules.home-manager
             hermes-agent.nixosModules.default
+            sops-nix.nixosModules.sops
           ];
         };
       };

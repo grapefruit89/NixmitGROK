@@ -13,7 +13,9 @@
   imports = [
     ./jellyfin.nix
     ./audiobookshelf.nix
-    ./arr-stack.nix
+    ./sonarr-radarr.nix
+    ./readarr.nix
+    ./prowlarr.nix
     ./sabnzbd.nix
     ./sync.nix
   ];

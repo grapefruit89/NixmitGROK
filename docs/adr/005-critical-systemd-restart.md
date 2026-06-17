@@ -1,7 +1,7 @@
 ---
 meta:
   role: doc
-  purpose: ADR-005 Restart=always für kritische Infrastruktur
+  purpose: ADR-005 Restart=always für kritische Dienste
   docs:
     - docs/adr/README.md
   tags:

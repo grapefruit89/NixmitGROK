@@ -13,6 +13,132 @@ entries:
         - nix
     ---
   - |
+    file: modules/05-alerting.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: SRE webhook/ntfy alerts for VPN and backup failures
+      docs:
+        - docs/guides/GUIDE-nftables-hardening.md
+      tags:
+        - alerting
+        - sre
+    ---
+  - |
+    file: modules/05-forbidden-tech.nix
+    meta:
+      id: NIXH-05-MOD-003
+      layer: 3
+      role: module
+      purpose: Forbidden-technology Build-time Assertions
+      lib:
+        - lib/forbidden-tech.nix
+      tags:
+        - policy
+    ---
+  - |
+    file: modules/05-runtime-guard.nix
+    meta:
+      id: NIXH-05-MOD-004
+      layer: 3
+      role: module
+      purpose: Runtime Security Watchdog — nftables/sshd live prüfen
+      tags:
+        - security
+        - runtime
+    ---
+  - |
+    file: modules/05-services-spec.nix
+    meta:
+      id: NIXH-05-MOD-001
+      layer: 3
+      role: module
+      purpose: Service-Spec-Matrix (SSoT) — Zonen, Ports, Port-Duplikat-Assertions
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - docs/ROADMAP.md
+      lib:
+        - lib/services-spec.nix
+        - lib/dns-map.nix
+      tags:
+        - services-spec
+        - ports
+    ---
+  - |
+    file: modules/05-sops.nix
+    meta:
+      id: NIXH-05-MOD-005
+      layer: 3
+      role: module
+      purpose: SOPS-Migration (Stufe 9+) — Schema + Kategorien nach mynixos-v5
+      docs:
+        - docs/adr/006-sops-migration-path.md
+      tags:
+        - sops
+        - secrets
+    ---
+  - |
+    file: modules/05-storage-policy.nix
+    meta:
+      id: NIXH-05-MOD-002
+      layer: 3
+      role: module
+      purpose: Tier-C-Exclusion — Build-time Assertion gegen HDD-Zugriffe in systemd
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - AGENTS.md
+      lib:
+        - lib/storage-policy.nix
+      tags:
+        - storage
+        - tier-c
+    ---
+  - |
+    file: modules/05-uid-registry.nix
+    meta:
+      id: NIXH-05-UID-001
+      layer: 3
+      role: module
+      purpose: UID/GID Single Source of Truth — keine Live-Migration, nur Registry + Assertions
+      lib:
+        - lib/uid-registry.nix
+      tags:
+        - uid
+        - registry
+    ---
+  - |
+    file: modules/10-gateway.nix
+    meta:
+      id: NIXH-10-GTW-001
+      layer: 3
+      role: module
+      purpose: DDNS-Updater (Cloudflare) + optional DNS-Guard — kein Cloudflared-Tunnel
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - docs/adr/006-sops-migration-path.md
+      lib:
+        - lib/dns-map.nix
+        - lib/service-factory.nix
+      tags:
+        - gateway
+        - ddns
+        - cloudflare
+    ---
+  - |
+    file: modules/10-ingress.nix
+    meta:
+      id: NIXH-10-ING-001
+      layer: 3
+      role: module
+      purpose: Spez-basierter Caddy-Ingress — ersetzt manuelle vHosts
+      lib:
+        - lib/caddy-ingress.nix
+        - lib/service-enable.nix
+      tags:
+        - caddy
+        - ingress
+    ---
+  - |
     file: modules/10-network.nix
     meta:
       layer: 3
@@ -38,14 +164,27 @@ entries:
         - database
     ---
   - |
+    file: modules/10-vpn-confinement.nix
+    meta:
+      id: NIXH-10-VPN-001
+      layer: 3
+      role: module
+      purpose: VPN Network-Namespaces für Usenet (veth-Bridge, Kill-Switch, Healthcheck)
+      tags:
+        - vpn
+        - netns
+    ---
+  - |
     file: modules/15-firewall.nix
     meta:
       layer: 3
       role: module
-      purpose: nftables L4 — Geo-Block, Rate-Limits, CrowdSec-Sets
+      purpose: nftables L4 — checkRuleset, WAN-Härtung, skuid, CrowdSec/Fail2ban
       docs:
-        - docs/adr/002-ipv6-homelab-v4-only.md
-        - docs/AUDIT-blocky-caddy-ipv6.md
+        - docs/adr/008-nftables-l4-hardening.md
+        - docs/guides/GUIDE-nftables-hardening.md
+      lib:
+        - lib/nftables-rules.nix
       services:
         - nftables
       tags:
@@ -143,19 +282,24 @@ entries:
         - arr
     ---
   - |
-    file: modules/50-media/arr-stack.nix
+    file: modules/50-media/audiobookshelf.nix
     meta:
+      id: NIXH-50-MED-001
       layer: 3
       role: module
-      purpose: Sonarr, Radarr, Readarr, Prowlarr via arr-helper
+      purpose: Audiobookshelf — Streaming-Caddy, VA-API-ready, RAM-Cap
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - docs/memory_oom.md
+      lib:
+        - lib/service-factory.nix
+        - lib/memory-policy.nix
       services:
-        - sonarr
-        - radarr
-        - readarr
-        - prowlarr
+        - audiobookshelf
       tags:
         - media
-        - arr
+        - audiobookshelf
+        - streaming
     ---
   - |
     file: modules/50-media/default.nix
@@ -185,6 +329,37 @@ entries:
         - jellyfin
     ---
   - |
+    file: modules/50-media/prowlarr.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: Prowlarr — VPN-NetNS, eigene dendritische Datei
+      docs:
+        - docs/adr/007-dendritic-one-file-per-service.md
+      services:
+        - prowlarr
+      tags:
+        - media
+        - arr
+        - dendritic
+        - vpn
+    ---
+  - |
+    file: modules/50-media/readarr.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: Readarr — eigene dendritische Datei
+      docs:
+        - docs/adr/007-dendritic-one-file-per-service.md
+      services:
+        - readarr
+      tags:
+        - media
+        - arr
+        - dendritic
+    ---
+  - |
     file: modules/50-media/sabnzbd.nix
     meta:
       layer: 3
@@ -200,6 +375,23 @@ entries:
       tags:
         - media
         - usenet
+    ---
+  - |
+    file: modules/50-media/sonarr-radarr.nix
+    meta:
+      layer: 3
+      role: module
+      purpose: Sonarr + Radarr — gemeinsame dendritische Datei
+      docs:
+        - docs/adr/007-dendritic-one-file-per-service.md
+        - docs/guides/GUIDE-dendritic-architecture.md
+      services:
+        - sonarr
+        - radarr
+      tags:
+        - media
+        - arr
+        - dendritic
     ---
   - |
     file: modules/50-media/sync.nix
@@ -296,6 +488,23 @@ entries:
         - iot
     ---
   - |
+    file: modules/60-apps/SERVICE_TEMPLATE.nix
+    meta:
+      id: NIXH-60-APP-TPL
+      layer: 3
+      role: module
+      purpose: Onboarding-Vorlage für neue Apps — Kopieren, anpassen, in default.nix importieren
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - docs/adr/README.md
+      lib:
+        - lib/service-factory.nix
+        - lib/dns-map.nix
+      tags:
+        - template
+        - onboarding
+    ---
+  - |
     file: modules/70-forge.nix
     meta:
       layer: 3
@@ -335,11 +544,37 @@ entries:
         - sandbox
     ---
   - |
+    file: modules/91-security-assertions.nix
+    meta:
+      id: NIXH-90-POL-001
+      layer: 3
+      role: module
+      purpose: Globale [SEC-*]-Assertions bei aktivierter Firewall / Production
+      docs:
+        - docs/SPEC_REGISTRY.md
+      tags:
+        - security
+        - assertions
+    ---
+  - |
     file: lib/caddy-helpers.nix
     meta:
       layer: 5
       role: lib
       purpose: Caddy vHost-Helfer — Proxy, SSO, Unix-Socket-Upstreams
+      tags:
+        - caddy
+        - ingress
+    ---
+  - |
+    file: lib/caddy-ingress.nix
+    meta:
+      id: NIXH-05-LIB-010
+      layer: 5
+      role: lib
+      purpose: Caddy vHost-Generator aus my.services.spec (Zonen-Policy)
+      docs:
+        - docs/ROADMAP.md
       tags:
         - caddy
         - ingress
@@ -377,6 +612,20 @@ entries:
         - dev
     ---
   - |
+    file: lib/dns-map.nix
+    meta:
+      id: NIXH-05-LIB-001
+      layer: 5
+      role: lib
+      purpose: Zentrale Hostname-Tabelle für *.nix.m7c5.de — eine Wahrheit für Caddy vHosts
+      docs:
+        - docs/SPEC_REGISTRY.md
+      tags:
+        - dns
+        - caddy
+        - ssot
+    ---
+  - |
     file: lib/dns-policy.nix
     meta:
       layer: 5
@@ -388,6 +637,27 @@ entries:
       tags:
         - dns
         - dot
+    ---
+  - |
+    file: lib/forbidden-tech.nix
+    meta:
+      id: NIXH-05-LIB-008
+      layer: 5
+      role: lib
+      purpose: Forbidden-technology Assertions (subset mynixos-v5, ohne Tailscale-Ban)
+      tags:
+        - policy
+        - security
+    ---
+  - |
+    file: lib/gatus-endpoints.nix
+    meta:
+      layer: 5
+      role: lib
+      purpose: Gatus-Endpoint-Generator aus Service-Spec
+      tags:
+        - gatus
+        - observability
     ---
   - |
     file: lib/kernel/blacklist-filesystems.nix
@@ -454,6 +724,19 @@ entries:
         - systemd
     ---
   - |
+    file: lib/nftables-rules.nix
+    meta:
+      layer: 5
+      role: lib
+      purpose: nftables ruleset Generator — WAN-Härtung, skuid, portscan
+      docs:
+        - docs/adr/008-nftables-l4-hardening.md
+        - docs/guides/GUIDE-nftables-hardening.md
+      tags:
+        - nftables
+        - firewall
+    ---
+  - |
     file: lib/rollout.nix
     meta:
       layer: 5
@@ -461,6 +744,75 @@ entries:
       purpose: Rollout-Helfer erstAb für stufenweise Service-Aktivierung
       tags:
         - rollout
+    ---
+  - |
+    file: lib/service-enable.nix
+    meta:
+      id: NIXH-05-LIB-009
+      layer: 5
+      role: lib
+      purpose: Spec-Schlüssel → my.services.*.enable für Ingress-Generator
+      tags:
+        - services-spec
+        - ingress
+    ---
+  - |
+    file: lib/service-factory.nix
+    meta:
+      id: NIXH-05-LIB-002
+      layer: 5
+      role: lib
+      purpose: mkService / mkStreamer — systemd-Hardening, persistDirs, optional Caddy
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - modules/60-apps/SERVICE_TEMPLATE.nix
+      lib:
+        - lib/dns-map.nix
+        - lib/caddy-helpers.nix
+      tags:
+        - factory
+        - caddy
+        - systemd
+    ---
+  - |
+    file: lib/services-spec.nix
+    meta:
+      id: NIXH-05-LIB-006
+      layer: 5
+      role: lib
+      purpose: Service-Spec-Matrix — Zonen, Ports/Sockets, Port-Konflikt-Assertions
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - docs/ROADMAP.md
+      tags:
+        - services-spec
+        - ports
+        - zoning
+    ---
+  - |
+    file: lib/storage-policy.nix
+    meta:
+      id: NIXH-05-LIB-007
+      layer: 5
+      role: lib
+      purpose: Tier-C-Exclusion — Build-time Scan systemd.services gegen HDD-Pfade
+      docs:
+        - docs/SPEC_REGISTRY.md
+        - AGENTS.md
+      tags:
+        - storage
+        - tier-c
+        - policy
+    ---
+  - |
+    file: lib/uid-registry.nix
+    meta:
+      layer: 5
+      role: lib
+      purpose: Statische UID/GID-Registry für skuid und Reproduzierbarkeit
+      tags:
+        - uid
+        - security
     ---
   - |
     file: lib/unix-sockets.nix
@@ -473,6 +825,16 @@ entries:
         - caddy
     ---
   - |
+    file: lib/vpn-connection.nix
+    meta:
+      layer: 5
+      role: lib
+      purpose: Upstream-Host für Services in VPN-NetNS (nixflix/nixarr connectionAddress)
+      tags:
+        - vpn
+        - netns
+    ---
+  - |
     file: lib/vpn-killswitch.nix
     meta:
       layer: 5
@@ -481,6 +843,16 @@ entries:
       tags:
         - vpn
         - privado
+    ---
+  - |
+    file: lib/wait-for-api.nix
+    meta:
+      layer: 5
+      role: lib
+      purpose: Wartet auf HTTP-API (nixarr waitForService / nixflix mkWaitForApiScript)
+      tags:
+        - media
+        - api
     ---
   - |
     file: machines/q958/access.nix
@@ -707,6 +1079,60 @@ entries:
         - adr
         - oom
   - |
+    file: docs/adr/004-unix-socket-upstreams.md
+    meta:
+      role: doc
+      purpose: ADR-004 Unix-Socket-Upstreams für Caddy
+      docs:
+        - docs/adr/README.md
+      tags:
+        - adr
+        - caddy
+  - |
+    file: docs/adr/005-critical-systemd-restart.md
+    meta:
+      role: doc
+      purpose: ADR-005 Restart=always für kritische Dienste
+      docs:
+        - docs/adr/README.md
+      tags:
+        - adr
+        - systemd
+  - |
+    file: docs/adr/006-sops-migration-path.md
+    meta:
+      role: doc
+      purpose: ADR-006 SOPS-Migration vs. secrets-provision
+      docs:
+        - docs/adr/README.md
+      tags:
+        - adr
+        - sops
+  - |
+    file: docs/adr/007-dendritic-one-file-per-service.md
+    meta:
+      role: doc
+      purpose: ADR-007 Dendritische Module — eine Datei pro Dienst
+      docs:
+        - docs/adr/README.md
+        - docs/guides/GUIDE-dendritic-architecture.md
+      tags:
+        - adr
+        - dendritic
+  - |
+    file: docs/adr/008-nftables-l4-hardening.md
+    meta:
+      role: doc
+      purpose: ADR-008 nftables L4-Härtung (KB-Synthese)
+      docs:
+        - docs/adr/README.md
+        - docs/guides/GUIDE-nftables-hardening.md
+      lib:
+        - lib/nftables-rules.nix
+      tags:
+        - adr
+        - nftables
+  - |
     file: docs/adr/README.md
     meta:
       role: doc
@@ -735,6 +1161,27 @@ entries:
       tags:
         - meta
         - llm
+  - |
+    file: docs/guides/GUIDE-dendritic-architecture.md
+    meta:
+      role: doc
+      purpose: Guide — dendritische Modul-Architektur
+      docs:
+        - docs/adr/007-dendritic-one-file-per-service.md
+        - AGENTS.md
+      tags:
+        - guide
+        - dendritic
+  - |
+    file: docs/guides/GUIDE-nftables-hardening.md
+    meta:
+      role: doc
+      purpose: Guide — nftables L4-Härtung für Homelab q958
+      docs:
+        - docs/adr/008-nftables-l4-hardening.md
+      tags:
+        - guide
+        - nftables
   - |
     file: docs/memory_oom.md
     meta:
@@ -779,6 +1226,14 @@ entries:
       tags:
         - session
         - changelog
+  - |
+    file: docs/SPEC_REGISTRY.md
+    meta:
+      role: doc
+      purpose: Leichtgewichtige Spec-IDs — Pfad, ADR, optional meta.id in Code-Headern
+      tags:
+        - registry
+        - spec
   - |
     file: docs/unraid-migration-map.md
     meta:

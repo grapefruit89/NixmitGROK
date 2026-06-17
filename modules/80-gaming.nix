@@ -250,7 +250,7 @@ in
     ];
 
     # ── 5. CADDY INGRESS ──────────────────────────────────────────────────────
-    services.caddy.virtualHosts."amp.${domain}" = {
+    services.caddy.virtualHosts."amp.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
       extraConfig = ''
         import security_headers
         reverse_proxy 127.0.0.1:${toString cfg.port}

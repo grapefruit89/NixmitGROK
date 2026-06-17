@@ -1,13 +1,12 @@
 ---
 meta:
   role: doc
-  purpose: ADR-006 Geplante SOPS-Migration vs. secrets-provision
+  purpose: ADR-006 SOPS-Migration vs. secrets-provision
   docs:
     - docs/adr/README.md
   tags:
     - adr
     - sops
-    - secrets
 ---
 
 # ADR-006: SOPS-Migration — Pfad von secrets-provision

@@ -6,7 +6,6 @@ meta:
     - docs/adr/README.md
   tags:
     - adr
-    - unix-socket
     - caddy
 ---
 

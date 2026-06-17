@@ -165,7 +165,7 @@ in
         "d ${cfgHass.mediaDir} 0775 ${cfgHass.user} ${cfgHass.group} -"
       ];
 
-      services.caddy.virtualHosts."home.${domain}" = {
+      services.caddy.virtualHosts."home.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
         extraConfig = caddy.proxySecurity cfgHass.port;
       };
     })
@@ -216,7 +216,7 @@ in
           };
         };
 
-        caddy.virtualHosts."zigbee.${domain}" = {
+        caddy.virtualHosts."zigbee.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
           extraConfig = caddy.proxySecurity cfgZigbee.zigbeePort;
         };
       };

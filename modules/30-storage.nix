@@ -19,7 +19,7 @@ let
   cfgMover = config.my.services.storage-mover;
 
   # Tier A (NVMe/SSD Cache): Persistent high-priority states
-  tierA = {
+  tierAStatic = {
     paths = [
       "/var/lib/secrets"
       "/var/lib/nixos"
@@ -95,6 +95,11 @@ in
         type = lib.types.str;
         default = "";
         description = "Persistent mount point (set in machines/<host>/profile.nix).";
+      };
+      extraPaths = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Zusätzliche Tier-A-Pfade aus mkService persistDirs.";
       };
     };
 
@@ -182,7 +187,7 @@ in
               depends = [ cfgImp.persistMountPoint ];
             };
           })
-          tierA.paths
+          (tierAStatic.paths ++ config.my.impermanence.extraPaths)
       ) // lib.listToAttrs (
         map
           (file: {
@@ -194,7 +199,7 @@ in
               depends = [ cfgImp.persistMountPoint ];
             };
           })
-          tierA.files
+          tierAStatic.files
       ) // {
         "${journaldPath}" = {
           device = "${cfgImp.persistMountPoint}${journaldPath}";
@@ -263,7 +268,7 @@ in
       };
 
       # Setgid enforcing for media group (GID 169)
-      users.groups.media.gid = 169;
+      users.groups.media.gid = config.my.groups.registry.media;
 
       # Create parent mount points and temporary state dirs
       systemd = {

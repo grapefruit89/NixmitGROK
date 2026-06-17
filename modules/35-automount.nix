@@ -67,7 +67,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    users.groups.media.gid = 169;
+    users.groups.media.gid = config.my.groups.registry.media;
 
     services.udev.extraRules = ''
       SUBSYSTEM=="block", ACTION=="add", ENV{DEVTYPE}=="partition", ENV{ID_FS_TYPE}=="?*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="nixhome-automount@%k.service"

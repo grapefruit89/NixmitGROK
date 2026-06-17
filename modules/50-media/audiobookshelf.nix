@@ -54,6 +54,7 @@ in
       inherit port;
       mode = "streaming";
       hardeningProfile = "node";
+      persistDirs = [ "/var/lib/audiobookshelf" ];
       privateDevices = !cfg.enableQuickSync;
       readWritePaths =
         [ "/var/lib/audiobookshelf" ]
