@@ -136,8 +136,7 @@ rec {
         inherit mode port socketPath upstreamHost;
         extra = extraCaddy;
       };
-      fromSpec = config.my.ingress.fromSpec.enable or false;
-      doIngress = if manageIngress != null then manageIngress else !fromSpec;
+      doIngress = if manageIngress != null then manageIngress else false;
       paths = lib.unique (defaultPersistDirs name persistDirs cacheDir);
     in
     lib.mkMerge [

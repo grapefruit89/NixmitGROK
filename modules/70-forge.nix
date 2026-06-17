@@ -98,9 +98,7 @@ in
         ];
       };
 
-      services.caddy.virtualHosts."git.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxyUnixSecurity sockets.forgejo;
-      };
+      my.impermanence.extraPaths = [ "/var/lib/forgejo" ];
     })
 
     # ── SEMAPHORE ANSIBLE WEB UI ──────────────────────────────────────────────
@@ -126,9 +124,7 @@ in
         dockerCompat = true;
       };
 
-      services.caddy.virtualHosts."semaphore.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso cfgSemaphore.port;
-      };
+      my.impermanence.extraPaths = [ "/var/lib/semaphore" ];
     })
 
     # ── COCKPIT SERVER ADMIN UI ───────────────────────────────────────────────
@@ -140,10 +136,6 @@ in
         };
 
         caddy.virtualHosts = {
-          "admin.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-            extraConfig = caddy.proxySso cfgCockpit.port;
-          };
-
           # ── SECURE INTEL AMT INGRESS (SSO POCKET-ID GATEKEEPER) ─────────────────
           "machines.${domain}" = lib.mkIf (cfgCockpit.exposeAmt && cfgCockpit.amtHost != "") {
             extraConfig = caddy.mkProxy {

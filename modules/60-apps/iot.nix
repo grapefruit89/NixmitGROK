@@ -165,9 +165,10 @@ in
         "d ${cfgHass.mediaDir} 0775 ${cfgHass.user} ${cfgHass.group} -"
       ];
 
-      services.caddy.virtualHosts."home.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySecurity cfgHass.port;
-      };
+      my.impermanence.extraPaths = [
+        cfgHass.stateDir
+        cfgHass.cacheDir
+      ];
     })
 
     (lib.mkIf cfgZigbee.enable {
@@ -216,10 +217,12 @@ in
           };
         };
 
-        caddy.virtualHosts."zigbee.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-          extraConfig = caddy.proxySecurity cfgZigbee.zigbeePort;
-        };
       };
+
+      my.impermanence.extraPaths = [
+        cfgZigbee.dataDir
+        "/var/lib/mosquitto"
+      ];
 
       systemd = {
         services = {

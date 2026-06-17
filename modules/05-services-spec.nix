@@ -36,6 +36,12 @@ in
       (specLib.specPortAssertion config.my.services.spec)
       {
         assertion =
+          !(config.services.caddy.enable or false) || (config.my.ingress.fromSpec.enable or false);
+        message =
+          "[SERVICES-SPEC] Caddy aktiv ohne fromSpec — alle vHosts müssen aus my.services.spec kommen.";
+      }
+      {
+        assertion =
           let
             offenders =
               lib.filterAttrs (

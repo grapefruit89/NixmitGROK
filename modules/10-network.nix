@@ -220,10 +220,6 @@ in
         };
       };
 
-      services.caddy.virtualHosts."dns.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso portAdguard;
-      };
-
       systemd.services.AdGuardHome.serviceConfig = {
         ProtectSystem = "strict";
         ProtectHome = true;
@@ -337,6 +333,8 @@ in
     # ── BLOCKY DNS RESOLVER ───────────────────────────────────────────────────
     (lib.mkIf config.my.services.blocky.enable {
       services.resolved.enable = lib.mkForce false;
+
+      my.impermanence.extraPaths = [ "/var/lib/blocky" ];
 
       systemd.tmpfiles.rules = [
         "d /var/lib/blocky 0755 root root -"
@@ -603,9 +601,9 @@ in
         })
       ];
 
-      services.caddy.virtualHosts."auth.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySecurity config.my.services.pocket-id.port;
-      };
+      my.impermanence.extraPaths = [
+        config.my.services.pocket-id.dataDir
+      ];
     })
 
     # ── CADDY GLOBAL CONFIG & SNIPPETS ────────────────────────────────────────

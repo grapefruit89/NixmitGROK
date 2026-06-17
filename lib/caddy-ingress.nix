@@ -13,6 +13,8 @@
 { lib, caddy, vpnConn ? null }:
 
 let
+  inherit (caddy) streamingBackend;
+
   vpnUpstream =
     name: entry:
     if vpnConn == null then
@@ -21,10 +23,6 @@ let
       "${vpnConn.connectionAddress vpnConn.cfg name}:${toString entry.port}"
     else
       mkUpstream entry;
-  streamingSubdomains = [
-    "jellyfin"
-    "audiobookshelf"
-  ];
 
   mkUpstream =
     entry:
@@ -51,6 +49,40 @@ let
       import sso_auth
       reverse_proxy ${upstream}
     }
+  '';
+
+  genJellyfinVhost = port: ''
+    import streamer_headers
+    import security_headers
+
+    @jellyfin_client header_regexp X-Emby-Authorization (?i)MediaBrowser
+
+    handle @jellyfin_client {
+      ${streamingBackend port}
+    }
+
+    handle {
+      import sso_auth
+      ${streamingBackend port}
+    }
+  '';
+
+  genVaultwardenVhost = port: ''
+    import security_headers
+
+    @websocket {
+      header Connection *Upgrade*
+      header Upgrade websocket
+    }
+    handle @websocket {
+      reverse_proxy 127.0.0.1:${toString (port + 1)}
+    }
+    reverse_proxy 127.0.0.1:${toString port}
+  '';
+
+  genSecurityOnlyVhost = upstream: ''
+    import security_headers
+    reverse_proxy ${upstream}
   '';
 
   genZoneVhost =
@@ -92,11 +124,34 @@ let
     else
       throw "caddy-ingress: zone '${zone}' hat keinen Ingress";
 
-  # Jellyfin Client-Split bleibt in jellyfin.nix (manualHosts)
-  manualHosts = [
-    "jellyfin"
-    "vaultwarden"
+  streamingSubdomains = [
+    "audiobookshelf"
   ];
+
+  genHostExtra =
+    {
+      name,
+      entry,
+      upstream,
+    }:
+    if name == "pocket-id" then
+      genAuthVhost upstream
+    else if name == "jellyfin" then
+      genJellyfinVhost entry.port
+    else if name == "vaultwarden" then
+      genVaultwardenVhost entry.port
+    else if name == "homepage" then
+      genSecurityOnlyVhost upstream
+    else if name == "amp" then
+      genSecurityOnlyVhost upstream
+    else if lib.elem name [ "home-assistant" "zigbee-stack" ] then
+      genSecurityOnlyVhost upstream
+    else
+      genZoneVhost {
+        zone = entry.zone;
+        inherit upstream;
+        subdomain = entry.subdomain;
+      };
 
   genVirtualHosts =
     {
@@ -111,7 +166,6 @@ let
           name: entry:
           (entry.subdomain or null) != null
           && (entry.zone != "loopback")
-          && !(lib.elem name manualHosts)
           && isEnabled name
         ) spec;
 
@@ -123,15 +177,9 @@ let
             else
               vpnUpstream name entry;
           fqdn = mkFqdn domain entry;
-          extraConfig =
-            if name == "pocket-id" then
-              genAuthVhost upstream
-            else
-              genZoneVhost {
-                zone = entry.zone;
-                inherit upstream;
-                subdomain = entry.subdomain;
-              };
+          extraConfig = genHostExtra {
+            inherit name entry upstream;
+          };
         in
         lib.nameValuePair fqdn { inherit extraConfig; };
 
@@ -140,5 +188,5 @@ let
 
 in
 {
-  inherit genVirtualHosts manualHosts streamingSubdomains;
+  inherit genVirtualHosts streamingSubdomains;
 }

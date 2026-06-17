@@ -30,6 +30,8 @@ in
     security.hideProcessInformation = true;
     security.lockKernelModules = cfg.lockKernelModules;
 
+    boot.kernelParams = lib.mkIf cfg.lockKernelModules [ "lockdown=confidentiality" ];
+
     # YubiKey / FIDO2 für LUKS-Unlock
     services.pcscd.enable = lib.mkForce true;
 

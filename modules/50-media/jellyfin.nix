@@ -17,7 +17,6 @@
 { config, lib, pkgs, ... }:
 
 let
-  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   factory = import ../../lib/service-factory.nix { inherit lib; };
   memory = import ../../lib/memory-policy.nix { inherit lib; };
   cfgJellyfin = config.my.services.jellyfin;
@@ -87,23 +86,6 @@ in
           intel-gpu-tools
         ];
 
-        services.caddy.virtualHosts.${dnsMap.host "jellyfin"} = {
-          extraConfig = ''
-            import streamer_headers
-            import security_headers
-
-            @jellyfin_client header_regexp X-Emby-Authorization (?i)MediaBrowser
-
-            handle @jellyfin_client {
-              ${caddy.streamingBackend portJellyfin}
-            }
-
-            handle {
-              import sso_auth
-              ${caddy.streamingBackend portJellyfin}
-            }
-          '';
-        };
       }
       (factory.mkStreamer {
         inherit config;

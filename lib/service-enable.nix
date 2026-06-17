@@ -3,7 +3,7 @@
 #   id: NIXH-05-LIB-009
 #   layer: 5
 #   role: lib
-#   purpose: Spec-Schlüssel → my.services.*.enable für Ingress-Generator
+#   purpose: Spec-Schlüssel → Service-enable für Ingress-Generator
 #   tags:
 #     - services-spec
 #     - ingress
@@ -11,20 +11,19 @@
 { lib }:
 
 let
-  get = attrs: name: attrs.${name} or { };
-
   enabled =
     config:
     name:
     let
       mySvc = config.my.services or { };
+      sec = config.my.security or { };
       checks = {
         postgresql = config.services.postgresql.enable or false;
         valkey = config.services.redis.servers.valkey.enable or false;
-        crowdsec = mySvc.crowdsec.enable or false;
-        loki = mySvc.loki.enable or false;
+        crowdsec = sec.crowdsec.enable or false;
+        loki = config.services.loki.enable or false;
         gatus = mySvc.gatus.enable or false;
-        grafana = mySvc.grafana.enable or false;
+        grafana = config.services.grafana.enable or false;
         sabnzbd = mySvc.sabnzbd.enable or false;
         cockpit = mySvc.cockpit.enable or false;
         blocky = mySvc.blocky.enable or false;

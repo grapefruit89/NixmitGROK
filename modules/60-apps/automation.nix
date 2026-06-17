@@ -16,7 +16,6 @@
 { config, lib, ... }:
 
 let
-  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   memory = import ../../lib/memory-policy.nix { inherit lib; };
   cfgPaperless = config.my.services.paperless;
   cfgN8n = config.my.services.n8n;
@@ -67,9 +66,10 @@ in
 
       systemd.services.paperless-task-queue.serviceConfig = memory.paperless.service;
 
-      services.caddy.virtualHosts."paperless.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso cfgPaperless.port;
-      };
+      my.impermanence.extraPaths = [
+        cfgPaperless.dataDir
+        cfgPaperless.consumptionDir
+      ];
     })
 
     (lib.mkIf cfgN8n.enable {
@@ -97,9 +97,7 @@ in
         RestrictAddressFamilies = lib.mkForce [ "AF_INET" "AF_INET6" "AF_UNIX" ];
       };
 
-      services.caddy.virtualHosts."n8n.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso cfgN8n.port;
-      };
+      my.impermanence.extraPaths = [ cfgN8n.userFolder ];
     })
   ];
 }

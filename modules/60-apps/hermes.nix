@@ -17,6 +17,8 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    my.impermanence.extraPaths = [ "/var/lib/hermes" ];
+
     # Hermes-Agent-Flake: eigener System-User, State unter /var/lib/hermes
     services.hermes-agent = {
       enable = true;

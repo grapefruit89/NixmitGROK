@@ -249,12 +249,6 @@ in
       "d ${cfg.dataDir} 0750 amp amp -"
     ];
 
-    # ── 5. CADDY INGRESS ──────────────────────────────────────────────────────
-    services.caddy.virtualHosts."amp.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-      extraConfig = ''
-        import security_headers
-        reverse_proxy 127.0.0.1:${toString cfg.port}
-      '';
-    };
+    my.impermanence.extraPaths = [ cfg.dataDir ];
   };
 }

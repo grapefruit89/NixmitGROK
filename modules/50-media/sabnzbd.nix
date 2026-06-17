@@ -17,16 +17,13 @@
 { config, lib, ... }:
 
 let
-  caddy = import ../../lib/caddy-helpers.nix { inherit lib; };
   memory = import ../../lib/memory-policy.nix { inherit lib; };
   vpnConn = import ../../lib/vpn-connection.nix { inherit lib; };
   cfgSabnzbd = config.my.services.sabnzbd;
   vpnCfg = config.my.services.vpn-confinement;
-  domain = config.my.configs.identity.domain;
   portSabnzbd = config.my.ports.sabnzbd;
   uids = config.my.users.registry;
   gids = config.my.groups.registry;
-  sabUpstream = vpnConn.connectionAddress vpnCfg "sabnzbd";
   sabInVpn = vpnConn.isVpnConfined vpnCfg "sabnzbd";
   vpnKillSwitch = import ../../lib/vpn-killswitch.nix {
     inherit lib;
@@ -36,6 +33,8 @@ let
 in
 {
   config = lib.mkIf cfgSabnzbd.enable {
+    my.impermanence.extraPaths = [ "/var/lib/sabnzbd" ];
+
     services.sabnzbd = {
       enable = true;
       openFirewall = false;
@@ -85,8 +84,5 @@ in
       }
     ];
 
-    services.caddy.virtualHosts."sabnzbd.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-      extraConfig = caddy.proxyTailscaleSso { port = portSabnzbd; host = sabUpstream; };
-    };
   };
 }

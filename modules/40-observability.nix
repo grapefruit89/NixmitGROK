@@ -285,9 +285,6 @@ in
           };
         };
 
-        caddy.virtualHosts."gatus.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-          extraConfig = caddy.proxyTailscaleSso { port = cfgGatus.port; };
-        };
       };
 
       systemd.services.gatus = {
@@ -442,9 +439,6 @@ in
           };
         };
 
-        caddy.virtualHosts."grafana.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-          extraConfig = caddy.proxyUnixTailscaleSso sockets.grafana;
-        };
       };
 
       systemd.services = {

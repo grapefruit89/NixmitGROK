@@ -24,9 +24,9 @@ Quelle: Portierung bewährter Patterns ohne 5-Schichten-Bruch. **`.enable` bleib
 | 1 | Service-Spec + Port-Duplikat-Assertion | [x] | `lib/services-spec.nix`, `modules/05-services-spec.nix` |
 | 2 | Tier-C-Policy-Assertions | [x] | `lib/storage-policy.nix`, `modules/05-storage-policy.nix` |
 | 3 | Forbidden-tech subset (Docker/Cron/iptables) | [x] | `lib/forbidden-tech.nix`, `modules/05-forbidden-tech.nix` |
-| 4 | `mkService` + `persistDirs` | [x] | `lib/service-factory.nix`, `modules/30-storage.nix` |
-| 5 | Caddy-Ingress aus Spec (manuelle vHosts abbauen) | [x] | `lib/caddy-ingress.nix`, `modules/10-ingress.nix` |
-| 6 | `runtime-guard.nix` ab Stufe 8 | [x] | `modules/05-runtime-guard.nix` |
+| 4 | `mkService` + `persistDirs` | [x] | `lib/service-factory.nix` → `impermanence.extraPaths`; `tierAStatic` nur Infra |
+| 5 | Caddy-Ingress aus Spec (keine Fallback-vHosts) | [x] | `lib/caddy-ingress.nix` inkl. Jellyfin/Vaultwarden |
+| 6 | `runtime-guard.nix` ab Stufe 8 | [x] | lockdown + fail2ban + crowdsec live checks |
 | 7 | VPN-NetNS Usenet-Stack | [x] | `modules/10-vpn-confinement.nix` (Stufe 6+, ersetzt UID-Routing) |
 | 8 | `mkStreamer` Jellyfin | [x] | `lib/service-factory.nix`, `jellyfin.nix` |
 | 9 | SOPS nach v5-Muster | [~] | `modules/05-sops.nix` + flake `sops-nix` — aktiv ab Stufe 9 |

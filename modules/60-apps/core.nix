@@ -75,20 +75,10 @@ in
         "d /var/log/vaultwarden 0750 vaultwarden vaultwarden -"
       ];
 
-      services.caddy.virtualHosts.${vaultHost} = {
-        extraConfig = ''
-          import security_headers
-
-          @websocket {
-            header Connection *Upgrade*
-            header Upgrade websocket
-          }
-          handle @websocket {
-            reverse_proxy 127.0.0.1:${toString (portVaultwarden + 1)}
-          }
-          reverse_proxy 127.0.0.1:${toString portVaultwarden}
-        '';
-      };
+      my.impermanence.extraPaths = [
+        "/var/lib/vaultwarden"
+        "/var/log/vaultwarden"
+      ];
 
       systemd.services.vaultwarden.serviceConfig = lib.mkMerge [
         (factory.systemdHardening {
@@ -428,9 +418,6 @@ in
         '';
       };
 
-      services.caddy.virtualHosts."dashboard.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySecurity portHomepage;
-      };
     })
 
     (lib.mkIf cfgFilebrowser.enable {
@@ -448,9 +435,7 @@ in
         "d /var/lib/filebrowser 0750 filebrowser filebrowser -"
       ];
 
-      services.caddy.virtualHosts."files.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso cfgFilebrowser.port;
-      };
+      my.impermanence.extraPaths = [ "/var/lib/filebrowser" ];
 
       systemd.services.filebrowser.serviceConfig = {
         ProtectSystem = "strict";
@@ -515,9 +500,7 @@ in
         };
       };
 
-      services.caddy.virtualHosts."ai.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-        extraConfig = caddy.proxySso cfgOpenWebui.port;
-      };
+      my.impermanence.extraPaths = [ "/var/lib/open-webui" ];
 
       systemd.services.open-webui.serviceConfig = {
         DynamicUser = true;
