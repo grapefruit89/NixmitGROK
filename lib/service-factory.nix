@@ -71,14 +71,14 @@ let
         if socketPath != null then
           {
             sso = caddy.proxyUnixSso socketPath;
-            "tailscale-sso" = caddy.proxyTailscaleSso socketPath;
+            "tailscale-sso" = caddy.proxyUnixTailscaleSso socketPath;
             security = caddy.proxyUnixSecurity socketPath;
             direct = caddy.proxyUnixDirect socketPath;
           }
         else if port != null then
           {
             sso = caddy.proxySso port;
-            "tailscale-sso" = caddy.proxyTailscaleSso port;
+            "tailscale-sso" = caddy.proxyTailscaleSso { inherit port; };
             security = caddy.proxySecurity port;
             direct = caddy.proxyDirect port;
             streaming = ''

@@ -286,7 +286,7 @@ in
         };
 
         caddy.virtualHosts."gatus.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-          extraConfig = caddy.proxyTailscaleSso cfgGatus.port;
+          extraConfig = caddy.proxyTailscaleSso { port = cfgGatus.port; };
         };
       };
 

@@ -86,7 +86,7 @@ in
     ];
 
     services.caddy.virtualHosts."sabnzbd.${domain}" = lib.mkIf (!(config.my.ingress.fromSpec.enable or false)) {
-      extraConfig = caddy.proxyTailscaleSso portSabnzbd sabUpstream;
+      extraConfig = caddy.proxyTailscaleSso { port = portSabnzbd; host = sabUpstream; };
     };
   };
 }
