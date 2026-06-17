@@ -28,6 +28,7 @@ in
     ../../modules/05-deferred-ops.nix
     ../../modules/25-kernel-policy.nix
     ../../modules/26-kernel-hardening.nix
+    ../../modules/27-hardened-core.nix
     ../../modules/10-network.nix
     ../../modules/10-ingress.nix
     ../../modules/10-vpn-confinement.nix

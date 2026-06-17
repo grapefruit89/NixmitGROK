@@ -51,6 +51,7 @@ in
     fail2ban.enable = erstAb 8;
     dropbear-rescue.enable = erstAb 8;
     kernel-hardening.enable = erstAb 8;
+    hardened.enable = erstAb 9;
   };
 
   my.storage.deferred.enable = erstAb 3;

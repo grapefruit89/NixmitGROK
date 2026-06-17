@@ -46,6 +46,16 @@ ssh -p 53844 moritz@100.64.0.1   # nach Stufe 9
 Bis Stufe 9: `secrets-provision` → `/var/lib/secrets/*` (Tier A).  
 Ab Stufe 9: `my.sops.enable` — Migration siehe [ADR-006](../adr/006-sops-migration-path.md).
 
+## Hardened Core (Stufe 9 / Production)
+
+`modules/27-hardened-core.nix` — nur mit `rollout.stufe >= 9`:
+
+- Deaktiviert: ModemManager, udisks2, cups, bluetooth, wpa_supplicant, upower
+- `security.hideProcessInformation = true`
+- Maskiert: `plymouth-quit-wait`, `systemd-networkd-wait-online`
+- **pcscd bleibt an** (YubiKey/LUKS)
+- `lockKernelModules` default `false` — nur bei Bedarf aktivieren
+
 ## Kernel-Härtung (Stufe 8+)
 
 `modules/26-kernel-hardening.nix` — aktiv ab Rollout Stufe 8:
