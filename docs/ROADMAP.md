@@ -2,7 +2,7 @@
 
 Steuerung: `machines/q958/profile.nix` → `rollout.stufe` (eine Zahl, rebuild, testen).
 
-**Aktuell: Stufe 5** (Caddy)
+**Aktuell: Stufe 8** (nftables, CrowdSec, fail2ban)
 
 ---
 

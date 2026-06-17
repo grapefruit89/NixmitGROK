@@ -270,7 +270,7 @@ next_batch: 0                # auto-update after each batch
 
 ### Batch 9 — Flake & Build
 
-- [ ] `flake.nix`: pinned inputs, `specialArgs`, all configurations (q958, laptop, wsl)
+- [ ] `flake.nix`: pinned inputs, `specialArgs`, q958 configuration builds
 - [ ] `nix build .#nixosConfigurations.q958.config.system.build.toplevel --impure` — does it build?
 - [ ] Unused inputs or dead outputs
 - [ ] `configuration.nix` → redirect to `machines/q958/default.nix` only

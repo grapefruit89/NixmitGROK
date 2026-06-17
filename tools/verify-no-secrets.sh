@@ -8,7 +8,8 @@ cd "$ROOT"
 FAIL=0
 
 if git rev-parse --git-dir >/dev/null 2>&1; then
-  if git grep -E 'passwordHash\s*=\s*"\$[0-9]|q958-dev-|privateKey\s*=\s*"[A-Za-z0-9+/]{40,}="' -- ':!*.example' ':!docs/SECURITY.md' ':!tools/verify-no-secrets.sh' 2>/dev/null; then
+  if git grep -E 'passwordHash\s*=\s*"\$[a-zA-Z0-9]|q958-dev-|privateKey\s*=\s*"[A-Za-z0-9+/]{40,}="' \
+    -- ':!*.example' ':!docs/SECURITY.md' ':!tools/verify-no-secrets.sh' ':!claudereview_prompt.md' 2>/dev/null; then
     echo "FAIL: Secrets in getrackten Dateien gefunden"
     FAIL=1
   fi

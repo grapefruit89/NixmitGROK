@@ -16,10 +16,7 @@ sudo cp "$STAGE/configuration.nix" "$ROOT/configuration.nix"
 sudo cp "$STAGE/AGENTS.md" "$ROOT/AGENTS.md"
 
 sudo rm -f \
-  "$ROOT/machines/q958/dienste-stufen.nix" \
-  "$ROOT/machines/q958/zugang-sicherung.nix" \
   "$ROOT/configuration.bootstrap.nix" \
-  "$ROOT/hardware-configuration.nix" \
-  "$ROOT/modules/30-storage.nix.snapshot-"*
+  "$ROOT/hardware-configuration.nix"
 
 echo "deployed to $ROOT"

@@ -16,6 +16,7 @@ let
           access.emergency = { };
           secrets.devKeys = { };
           secrets.privado = { };
+          restic = { healthcheckUrl = ""; };
         };
 in
 {
@@ -152,6 +153,11 @@ in
     mediaPoolMountPoint = "/mnt/media";
     fastPoolMountPoint = "/mnt/fast_pool";
     mergerfsEnable = false;
+
+    # Stufe 9 (Impermanence): NIXPERSIST mount — getrennt von hardware.nix "/" (Stufe 0–8)
+    impermanence = {
+      mountPoint = "/persist";
+    };
   };
 
   secrets = {
@@ -213,10 +219,15 @@ in
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJRDbyFjT4SEL8yxNwZuEBPORD82qlJJhdr2r4qz1vCX"
       ];
     };
+    firewall = {
+      lanCidrs = [ "192.168.0.0/16" "10.0.0.0/8" "172.16.0.0/12" ];
+      blockedCountries = [ "cn" "ru" "kp" "ir" "sy" "vn" ];
+      allowLanDns = true;
+    };
   };
 
   restic = {
-    healthcheckUrl = "https://hc-ping.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+    healthcheckUrl = local.restic.healthcheckUrl or "";
   };
 
   kernel = let

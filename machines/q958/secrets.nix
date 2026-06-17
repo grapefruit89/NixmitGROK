@@ -8,6 +8,14 @@ let
   secretsDir = p.secrets.dir;
   dk = p.secrets.devKeys;
   privadoKey = local.secrets.privado.privateKey or "";
+  resticS3 = local.secrets.restic or { };
+  ampPassword =
+    (dk.amp or { }).adminPassword
+    or (throw "secrets.devKeys.amp.adminPassword in profile.local.nix setzen");
+  ampUser = (dk.amp or { }).adminUser or "admin";
+  resticRepository = resticS3.repository or "";
+  resticAwsKey = resticS3.awsAccessKeyId or "";
+  resticAwsSecret = resticS3.awsSecretAccessKey or "";
   moritz = (import ../../users/moritz/profile.nix).name;
 
   provisionScript = pkgs.writeShellScript "q958-secrets-provision" ''
@@ -46,13 +54,21 @@ let
     echo "ADMIN_TOKEN=${dk.vaultwarden.adminToken}" > ${secretsDir}/vaultwarden.env
     chmod 600 ${secretsDir}/vaultwarden.env
 
-    _amp_user="${(dk.amp or { }).adminUser or "admin"}"
-    _amp_pass="${(dk.amp or { }).adminPassword or "q958-dev-amp-admin-v1"}"
     cat > ${secretsDir}/amp.env <<AMPEOF
-AMP_ADMIN_USER=$_amp_user
-AMP_ADMIN_PASSWORD=$_amp_pass
+AMP_ADMIN_USER=${ampUser}
+AMP_ADMIN_PASSWORD=${ampPassword}
 AMPEOF
     chmod 600 ${secretsDir}/amp.env
+
+    # Restic S3 — optional; leer = kein Offsite-Backup bis konfiguriert
+    if [ -n "${resticRepository}" ]; then
+      cat > ${secretsDir}/restic_s3_creds <<RESTICEOF
+RESTIC_REPOSITORY=${resticRepository}
+AWS_ACCESS_KEY_ID=${resticAwsKey}
+AWS_SECRET_ACCESS_KEY=${resticAwsSecret}
+RESTICEOF
+      chmod 600 ${secretsDir}/restic_s3_creds
+    fi
 
     # Context7: nur wenn in profile.nix gesetzt; sonst Datei mit Hinweis
     if [ -n "${dk.context7.apiKey}" ]; then

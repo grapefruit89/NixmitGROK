@@ -1,6 +1,10 @@
 # Kopie: cp profile.local.nix.example profile.local.nix
 # NIEMALS committen — steht in .gitignore
 {
+  restic = {
+    # optional — leer = kein Healthchecks.io-Ping
+    healthcheckUrl = "";
+  };
   access = {
     emergency = {
       # nixos-rebuild: mkpasswd -m sha-512
@@ -30,6 +34,11 @@
     privado = {
       # WireGuard PrivateKey — landet in /var/lib/secrets/privado.env + privado_private_key
       privateKey = "";
+    };
+    restic = {
+      repository = "";
+      awsAccessKeyId = "";
+      awsSecretAccessKey = "";
     };
   };
 }

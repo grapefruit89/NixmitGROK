@@ -352,7 +352,12 @@ in
 
       systemd.services.restic-backups-tier-a-sovereign = {
         postStop = lib.mkIf (cfgBackup.healthcheckUrl != "") ''
-          ${pkgs.curl}/bin/curl -fsS -m 10 --retry 5 "${cfgBackup.healthcheckUrl}"
+          status=$(${pkgs.systemd}/bin/systemctl show -p ExecMainStatus --value restic-backups-tier-a-sovereign.service 2>/dev/null || echo 1)
+          if [ "$status" = "0" ]; then
+            ${pkgs.curl}/bin/curl -fsS -m 10 --retry 5 "${cfgBackup.healthcheckUrl}"
+          else
+            ${pkgs.curl}/bin/curl -fsS -m 10 --retry 5 "${cfgBackup.healthcheckUrl}/fail" || true
+          fi
         '';
       };
     })

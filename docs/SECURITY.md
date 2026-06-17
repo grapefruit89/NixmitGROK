@@ -40,7 +40,7 @@ Alles Sensitive steht in `.gitignore` — u. a.:
 Vor Push prüfen:
 
 ```bash
-git grep -E 'passwordHash\s*=\s*"\$|q958-dev-' -- ':!*.example' ':!docs/SECURITY.md' && echo FAIL || echo OK
+bash tools/verify-no-secrets.sh
 ```
 
 ## Dauerregeln

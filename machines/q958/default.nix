@@ -66,7 +66,7 @@ in
 
     impermanence = {
       persistentDisk = p.storage.tierA.persist.disk;
-      persistMountPoint = p.storage.tierA.persist.mountPoint;
+      persistMountPoint = p.storage.impermanence.mountPoint;
     };
 
     security = {
@@ -74,6 +74,11 @@ in
         luksDevice = p.storage.luks.device;
         sshPort = p.security.sovereignUnlock.sshPort;
         authorizedKeys = p.security.sovereignUnlock.authorizedKeys;
+      };
+      firewall = {
+        lanCidrs = p.security.firewall.lanCidrs;
+        blockedCountries = p.security.firewall.blockedCountries;
+        allowLanDns = p.security.firewall.allowLanDns;
       };
     };
 
