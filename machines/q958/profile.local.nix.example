@@ -23,6 +23,12 @@
         adminUser = "admin";
         adminPassword = "CHANGE_ME";
       };
+      homeassistant = {
+        mqttPassword = "CHANGE_ME";
+      };
+      zigbee = {
+        mqttPassword = "CHANGE_ME";
+      };
       media = {
         prowlarr.apiKey = "CHANGE_ME";
         sonarr.apiKey = "CHANGE_ME";

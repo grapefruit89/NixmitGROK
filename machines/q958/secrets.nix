@@ -16,6 +16,12 @@ let
   resticRepository = resticS3.repository or "";
   resticAwsKey = resticS3.awsAccessKeyId or "";
   resticAwsSecret = resticS3.awsSecretAccessKey or "";
+  hassMqttPassword =
+    (dk.homeassistant or { }).mqttPassword
+    or (throw "secrets.devKeys.homeassistant.mqttPassword in profile.local.nix setzen");
+  zigbeeMqttPassword =
+    (dk.zigbee or { }).mqttPassword
+    or (throw "secrets.devKeys.zigbee.mqttPassword in profile.local.nix setzen");
   moritz = (import ../../users/moritz/profile.nix).name;
 
   provisionScript = pkgs.writeShellScript "q958-secrets-provision" ''
@@ -59,6 +65,24 @@ AMP_ADMIN_USER=${ampUser}
 AMP_ADMIN_PASSWORD=${ampPassword}
 AMPEOF
     chmod 600 ${secretsDir}/amp.env
+
+    # Mosquitto — nur Hash speichern (NixOS-Modul setzt "username:" selbst davor)
+    rm -f ${secretsDir}/mosquitto_password ${secretsDir}/mosquitto_hass_password
+    ${pkgs.mosquitto}/bin/mosquitto_passwd -b -c ${secretsDir}/mosquitto_password zigbee2mqtt "${zigbeeMqttPassword}"
+    cut -d: -f2- ${secretsDir}/mosquitto_password > ${secretsDir}/.mosquitto_password_hash
+    mv ${secretsDir}/.mosquitto_password_hash ${secretsDir}/mosquitto_password
+    chmod 600 ${secretsDir}/mosquitto_password
+    ${pkgs.mosquitto}/bin/mosquitto_passwd -b -c ${secretsDir}/mosquitto_hass_password homeassistant "${hassMqttPassword}"
+    cut -d: -f2- ${secretsDir}/mosquitto_hass_password > ${secretsDir}/.mosquitto_hass_password_hash
+    mv ${secretsDir}/.mosquitto_hass_password_hash ${secretsDir}/mosquitto_hass_password
+    chmod 600 ${secretsDir}/mosquitto_hass_password
+    printf '%s' "${hassMqttPassword}" > ${secretsDir}/homeassistant_mqtt_password
+    chmod 600 ${secretsDir}/homeassistant_mqtt_password
+
+    cat > ${secretsDir}/zigbee2mqtt.env <<Z2MEOF
+MQTT_PASSWORD=${zigbeeMqttPassword}
+Z2MEOF
+    chmod 600 ${secretsDir}/zigbee2mqtt.env
 
     # Restic S3 — optional; leer = kein Offsite-Backup bis konfiguriert
     if [ -n "${resticRepository}" ]; then
@@ -137,6 +161,9 @@ in
       "grafana.service"
       "pocket-id.service"
       "home-manager-${moritz}.service"
+      "mosquitto.service"
+      "home-assistant-mqtt-provision.service"
+      "home-assistant.service"
     ];
   };
 }
