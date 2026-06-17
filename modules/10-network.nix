@@ -86,7 +86,7 @@ in
             "https://v.firebog.net/hosts/Easyprivacy.txt"
           ];
         };
-        description = "Blocky blackLists — Gruppenname → URL-Liste.";
+        description = "Blocky denylists — Gruppenname → URL-Liste.";
       };
     };
 
@@ -368,8 +368,8 @@ in
         }
         // lib.optionalAttrs config.my.services.blocky.enableBlocking {
           blocking = {
-            blackLists = config.my.services.blocky.blockingLists;
-            clientGroups.default = lib.attrNames config.my.services.blocky.blockingLists;
+            denylists = config.my.services.blocky.blockingLists;
+            clientGroupsBlock.default = lib.attrNames config.my.services.blocky.blockingLists;
           };
         };
       };
