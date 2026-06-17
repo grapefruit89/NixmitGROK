@@ -147,12 +147,6 @@ lib.concatStringsSep "\n" [
         timeout 1m
       }
 
-      set ssh_conn {
-        type ipv4_addr
-        flags dynamic, timeout
-        timeout 5m
-      }
-
       chain input {
         type filter hook input priority filter; policy drop;
         jump in_trusted
@@ -209,7 +203,7 @@ lib.concatStringsSep "\n" [
         tcp dport { 80, 443 } ct state new limit rate over 30/second burst 60 packets drop comment "HTTP conn flood"
         tcp dport { 80, 443 } accept
         tcp dport { ${sshPortList} } ct state new update @ssh_meter { ip saddr limit rate over 10/minute } drop
-        tcp dport { ${sshPortList} } ct state new update @ssh_conn { ip saddr ct count over 3 } drop comment "SSH parallel"
+        tcp dport { ${sshPortList} } ct state new ct count over 3 drop comment "SSH parallel"
         tcp dport { ${sshPortList} } accept
         return
       }
