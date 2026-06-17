@@ -24,6 +24,8 @@ meta:
 | [006](006-sops-migration-path.md) | SOPS-Migration vs. secrets-provision | accepted | 2026-06-17 | 10-gateway, DDNS, Cloudflare |
 | [007](007-dendritic-one-file-per-service.md) | Dendritische Module — eine Datei pro Dienst | accepted | 2026-06-17 | 50-media/*, rollout.nix |
 | [008](008-nftables-l4-hardening.md) | nftables L4-Härtung (KB-Synthese) | accepted | 2026-06-17 | 15-firewall, uid-registry, fail2ban |
+| [009](009-vpn-leak-check.md) | VPN-NetNS-Leak-Check (Timer) | accepted | 2026-06-17 | 10-vpn-confinement, sabnzbd, prowlarr |
+| [010](010-production-ssh-impermanence.md) | Production SSH-Port, PermitTTY, Impermanence | accepted | 2026-06-17 | rollout.nix, 20-security, 30-storage |
 
 ## Wann neues ADR?
 
@@ -54,3 +56,4 @@ Nicht: tote `ADR-10-network.md`-Pfade ohne Datei.
 | 2026-06-17 | ADR 004–006 (Fabrik, DDNS, SOPS-Pfad) |
 | 2026-06-17 | ADR-Index angelegt |
 | 2026-06-17 | ADR 007–008 (Dendritic, nftables KB) |
+| 2026-06-17 | ADR 009–010 (nix-hermes Audit: VPN leak, Production-Modus) |

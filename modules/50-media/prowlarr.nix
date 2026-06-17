@@ -35,5 +35,6 @@ in
     gid = gids.prowlarr;
     useVpnKillSwitch = true;
     upstreamHost = prowlarrUpstream;
+    metadataDir = "/mnt/fast_pool/metadata/prowlarr";
   });
 }

@@ -170,6 +170,8 @@ entries:
       layer: 3
       role: module
       purpose: VPN Network-Namespaces für Usenet (veth-Bridge, Kill-Switch, Healthcheck)
+      docs:
+        - docs/adr/009-vpn-leak-check.md
       tags:
         - vpn
         - netns
@@ -1133,6 +1135,30 @@ entries:
         - adr
         - nftables
   - |
+    file: docs/adr/009-vpn-leak-check.md
+    meta:
+      role: doc
+      purpose: ADR-009 VPN-NetNS-Leak-Check per systemd-Timer
+      docs:
+        - docs/adr/README.md
+        - docs/guides/GUIDE-media-stack.md
+      tags:
+        - adr
+        - vpn
+        - netns
+  - |
+    file: docs/adr/010-production-ssh-impermanence.md
+    meta:
+      role: doc
+      purpose: ADR-010 Production-Modus — SSH-Port, PermitTTY, Impermanence
+      docs:
+        - docs/adr/README.md
+        - docs/guides/GUIDE-security-secrets.md
+      tags:
+        - adr
+        - ssh
+        - impermanence
+  - |
     file: docs/adr/README.md
     meta:
       role: doc
@@ -1162,6 +1188,26 @@ entries:
         - meta
         - llm
   - |
+    file: docs/guides/ANTIPATTERNS.md
+    meta:
+      role: doc
+      purpose: Verbotene Muster — Synthese aus nix-hermes Guides
+      tags:
+        - antipattern
+        - architecture
+  - |
+    file: docs/guides/GUIDE-data-management.md
+    meta:
+      role: doc
+      purpose: rsync, rclone, restic — NixOS-Risiken und Homelab-Einsatz
+      docs:
+        - docs/guides/GUIDE-storage-tiers.md
+        - modules/30-storage.nix
+      tags:
+        - storage
+        - restic
+        - rclone
+  - |
     file: docs/guides/GUIDE-dendritic-architecture.md
     meta:
       role: doc
@@ -1173,6 +1219,31 @@ entries:
         - guide
         - dendritic
   - |
+    file: docs/guides/GUIDE-media-stack.md
+    meta:
+      role: doc
+      purpose: Betriebsguide Media-Stack, VPN-NetNS, Config-Sync, QSV
+      docs:
+        - docs/adr/007-dendritic-one-file-per-service.md
+        - docs/adr/009-vpn-leak-check.md
+        - docs/guides/GUIDE-dendritic-architecture.md
+      tags:
+        - media
+        - jellyfin
+        - vpn
+  - |
+    file: docs/guides/GUIDE-network-database.md
+    meta:
+      role: doc
+      purpose: Betriebsguide DNS (Blocky), Valkey, PostgreSQL
+      docs:
+        - docs/adr/001-dns-dot-fail-closed.md
+        - modules/10-network.nix
+      tags:
+        - network
+        - blocky
+        - postgresql
+  - |
     file: docs/guides/GUIDE-nftables-hardening.md
     meta:
       role: doc
@@ -1182,6 +1253,43 @@ entries:
       tags:
         - guide
         - nftables
+  - |
+    file: docs/guides/GUIDE-observability.md
+    meta:
+      role: doc
+      purpose: Betriebsguide Gatus, VLG-Logging, CrowdSec, Alerting
+      docs:
+        - modules/40-observability.nix
+        - modules/05-alerting.nix
+      tags:
+        - observability
+        - gatus
+        - crowdsec
+  - |
+    file: docs/guides/GUIDE-security-secrets.md
+    meta:
+      role: doc
+      purpose: Betriebsguide Sovereign-Unlock, SSH-Härtung, Secrets
+      docs:
+        - docs/adr/010-production-ssh-impermanence.md
+        - docs/SECURITY.md
+        - modules/20-security.nix
+      tags:
+        - security
+        - ssh
+        - sops
+  - |
+    file: docs/guides/GUIDE-storage-tiers.md
+    meta:
+      role: doc
+      purpose: Betriebsguide Storage-Tiers, Impermanence, Restic, Pending-Watcher
+      docs:
+        - machines/q958/profile.nix
+        - modules/30-storage.nix
+      tags:
+        - storage
+        - tiers
+        - restic
   - |
     file: docs/memory_oom.md
     meta:

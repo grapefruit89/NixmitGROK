@@ -53,6 +53,7 @@ in
     };
     tailscaleIP = "100.64.0.1";
     sshPort = 22;
+    productionSshPort = 53844;
     blocky = {
       upstream = [
         "tcp-tls:1.1.1.1:853" # Cloudflare

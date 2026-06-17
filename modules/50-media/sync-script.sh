@@ -384,7 +384,7 @@ fi
 
 # 7. Configure SABnzbd Download Client in Sonarr (Category: tv)
 if [ -n "$SONARR_KEY" ] && [ -n "$SAB_KEY" ]; then
-  HAS_SONARR_SAB=$(curl -s -H "X-Api-Key: $SONARR_KEY" http://127.0.0.1:8989/api/v3/downloadclient | jq '.[] | select(.implementation == "Sabnzbd")' 2>/dev/null)
+  HAS_SONARR_SAB=$(curl -s -H "X-Api-Key: $SONARR_KEY" "http://127.0.0.1:${SONARR_PORT}/api/v3/downloadclient" | jq '.[] | select(.implementation == "Sabnzbd")' 2>/dev/null)
   if [ -z "$HAS_SONARR_SAB" ]; then
     echo "Configuring SABnzbd download client in Sonarr..."
     SONARR_SAB_PAYLOAD=$(cat <<EOF
@@ -410,7 +410,7 @@ EOF
       -H "X-Api-Key: $SONARR_KEY" \
       -H "Content-Type: application/json" \
       -d "$SONARR_SAB_PAYLOAD" \
-      http://127.0.0.1:8989/api/v3/downloadclient
+      "http://127.0.0.1:${SONARR_PORT}/api/v3/downloadclient"
     echo "SABnzbd configured in Sonarr successfully."
   else
     echo "SABnzbd is already configured in Sonarr. Skipping."
@@ -419,7 +419,7 @@ fi
 
 # 8. Configure SABnzbd Download Client in Radarr (Category: movies)
 if [ -n "$RADARR_KEY" ] && [ -n "$SAB_KEY" ]; then
-  HAS_RADARR_SAB=$(curl -s -H "X-Api-Key: $RADARR_KEY" http://127.0.0.1:7878/api/v3/downloadclient | jq '.[] | select(.implementation == "Sabnzbd")' 2>/dev/null)
+  HAS_RADARR_SAB=$(curl -s -H "X-Api-Key: $RADARR_KEY" "http://127.0.0.1:${RADARR_PORT}/api/v3/downloadclient" | jq '.[] | select(.implementation == "Sabnzbd")' 2>/dev/null)
   if [ -z "$HAS_RADARR_SAB" ]; then
     echo "Configuring SABnzbd download client in Radarr..."
     RADARR_SAB_PAYLOAD=$(cat <<EOF
@@ -445,7 +445,7 @@ EOF
       -H "X-Api-Key: $RADARR_KEY" \
       -H "Content-Type: application/json" \
       -d "$RADARR_SAB_PAYLOAD" \
-      http://127.0.0.1:7878/api/v3/downloadclient
+      "http://127.0.0.1:${RADARR_PORT}/api/v3/downloadclient"
     echo "SABnzbd configured in Radarr successfully."
   else
     echo "SABnzbd is already configured in Radarr. Skipping."
@@ -455,7 +455,7 @@ fi
 # 9. Sync Quality/Language Profile Assignments in Sonarr and Radarr (Unraid Migration)
 if [ -n "$SONARR_KEY" ] && [ "$TARGET_LANG" = "de" ]; then
   echo "Enforcing Deutsch quality profile (ID 1) in Sonarr..."
-  SERIES_LIST=$(curl -s -H "X-Api-Key: $SONARR_KEY" http://127.0.0.1:8989/api/v3/series)
+  SERIES_LIST=$(curl -s -H "X-Api-Key: $SONARR_KEY" "http://127.0.0.1:${SONARR_PORT}/api/v3/series")
   echo "$SERIES_LIST" | jq -c '.[] | select(.qualityProfileId == 4)' 2>/dev/null | while read -r series; do
     SERIES_ID=$(echo "$series" | jq '.id')
     TITLE=$(echo "$series" | jq -r '.title')
@@ -465,13 +465,13 @@ if [ -n "$SONARR_KEY" ] && [ "$TARGET_LANG" = "de" ]; then
       -H "X-Api-Key: $SONARR_KEY" \
       -H "Content-Type: application/json" \
       -d "$UPDATED_PAYLOAD" \
-      "http://127.0.0.1:8989/api/v3/series/$SERIES_ID"
+      "http://127.0.0.1:${SONARR_PORT}/api/v3/series/$SERIES_ID"
   done
 fi
 
 if [ -n "$RADARR_KEY" ] && [ "$TARGET_LANG" = "de" ]; then
   echo "Enforcing Fernseher quality profile (ID 4) in Radarr..."
-  MOVIE_LIST=$(curl -s -H "X-Api-Key: $RADARR_KEY" http://127.0.0.1:7878/api/v3/movie)
+  MOVIE_LIST=$(curl -s -H "X-Api-Key: $RADARR_KEY" "http://127.0.0.1:${RADARR_PORT}/api/v3/movie")
   echo "$MOVIE_LIST" | jq -c '.[] | select(.qualityProfileId == 11)' 2>/dev/null | while read -r movie; do
     MOVIE_ID=$(echo "$movie" | jq '.id')
     TITLE=$(echo "$movie" | jq -r '.title')
@@ -481,7 +481,7 @@ if [ -n "$RADARR_KEY" ] && [ "$TARGET_LANG" = "de" ]; then
       -H "X-Api-Key: $RADARR_KEY" \
       -H "Content-Type: application/json" \
       -d "$UPDATED_PAYLOAD" \
-      "http://127.0.0.1:7878/api/v3/movie/$MOVIE_ID"
+      "http://127.0.0.1:${RADARR_PORT}/api/v3/movie/$MOVIE_ID"
   done
 fi
 

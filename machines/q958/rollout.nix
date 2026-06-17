@@ -104,7 +104,14 @@ in
 
   my.security.runtime-guard.enable = erstAb 8;
 
-  my.services.vpn-confinement.enable = erstAb 6;
+  my.services.vpn-confinement = {
+    enable = erstAb 6;
+    leakCheck.enable = erstAb 6;
+  };
+
+  my.ports.ssh =
+    if stufe >= 9 then lib.mkForce p.network.productionSshPort
+    else lib.mkForce p.network.sshPort;
 
   my.sops.enable = erstAb 9;
 

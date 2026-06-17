@@ -338,5 +338,55 @@
     "rollout_stufe": 8,
     "consensus": "grok",
     "source_path": "modules/05-alerting.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "nix-hermes Audit — VPN leak timer getrennt",
+    "content": "vpn-leak-check: systemd.timers eigener Attrsatz (nicht in services). Alle 15min Host vs NetNS IP; bei Leak stop sabnzbd+prowlarr. rollout leakCheck.enable ab Stufe 6.",
+    "status": "accepted",
+    "rollout_stufe": 6,
+    "consensus": "grok",
+    "source_path": "modules/10-vpn-confinement.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "Production SSH 53844 + PermitTTY Match",
+    "content": "rollout stufe>=9: my.ports.ssh=productionSshPort aus profile.nix. LAN/Tailscale PermitTTY yes, Match All no. Impermanence + tmpfiles für persist paths.",
+    "status": "accepted",
+    "rollout_stufe": 9,
+    "consensus": "grok",
+    "source_path": "machines/q958/rollout.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "MediaCover Tier B metadata binds",
+    "content": "sonarr/radarr/prowlarr MediaCover nach /mnt/fast_pool/metadata/* — tmpfiles in storage.nix, Restic exclude **/MediaCover.",
+    "status": "accepted",
+    "rollout_stufe": 6,
+    "consensus": "grok",
+    "source_path": "modules/50-media/sonarr-radarr.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "Jellyfin config seeds idempotent",
+    "content": "runCommand sed auf jellyfin-system/network.xml; preStart installiert nur wenn /var/lib/jellyfin/config/*.xml fehlt.",
+    "status": "accepted",
+    "rollout_stufe": 6,
+    "consensus": "grok",
+    "source_path": "modules/50-media/jellyfin.nix"
+  },
+  {
+    "theme": "nix_os",
+    "agent": "grok",
+    "title": "nix-hermes Guides portiert ohne NIXMETA",
+    "content": "docs/guides: network-database, security-secrets, storage-tiers, observability, media-stack, data-management, ANTIPATTERNS. ADR 009 VPN leak, 010 production SSH.",
+    "status": "accepted",
+    "rollout_stufe": 0,
+    "consensus": "grok",
+    "source_path": "docs/guides/"
   }
 ]

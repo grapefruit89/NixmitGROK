@@ -268,17 +268,13 @@ in
           Ciphers = [ "chacha20-poly1305@openssh.com" "aes256-gcm@openssh.com" ];
           Macs = [ "hmac-sha2-512-etm@openssh.com" "hmac-sha2-256-etm@openssh.com" ];
         };
-        extraConfig = lib.mkForce "";
+        extraConfig = lib.mkForce ''
+          Match Address 127.0.0.1,::1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,100.64.0.0/10
+            PermitTTY yes
+          Match All
+            PermitTTY no
+        '';
       };
-
-
-
-      # Rate-Limiting für SSH per nftables zum Schutz vor Brute-Force
-      networking.firewall.extraInputRules = lib.mkAfter ''
-        tcp dport ${toString sshPort} ct state new \
-          limit rate over 10/minute \
-          drop comment "SSH brute-force rate limiting"
-      '';
 
       systemd.services.sshd.serviceConfig = {
         Restart = "always";

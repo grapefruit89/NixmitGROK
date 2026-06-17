@@ -26,6 +26,23 @@ let
   dnsMap = import ../../lib/dns-map.nix { inherit domain; };
   portJellyfin = config.my.ports.jellyfin;
   portJellyseerr = config.my.ports.jellyseerr;
+  locale = config.my.configs.locale;
+  localeLang = locale.language or "de";
+  localeUi = lib.replaceStrings [ "_" ] [ "-" ] (locale.default or "de_DE.UTF-8");
+  localeCc = lib.toUpper (lib.substring 3 2 localeUi);
+  jellyfinUrl = "https://${dnsMap.host "jellyfin"}";
+
+  jellyfinConfigSeeds = pkgs.runCommand "jellyfin-config-seeds" { } ''
+    mkdir -p $out
+    ${pkgs.gnused}/bin/sed \
+      -e 's|@LOCALE_LANG@|${localeLang}|g' \
+      -e 's|@LOCALE_CC@|${localeCc}|g' \
+      -e 's|@LOCALE_UI@|${localeUi}|g' \
+      ${./data/jellyfin-system.xml} > $out/system.xml
+    ${pkgs.gnused}/bin/sed \
+      -e 's|@JELLYFIN_URL@|${jellyfinUrl}|g' \
+      ${./data/jellyfin-network.xml} > $out/network.xml
+  '';
 
 in
 {
@@ -36,6 +53,16 @@ in
           enable = true;
           openFirewall = false;
         };
+
+        systemd.services.jellyfin.preStart = lib.mkBefore ''
+          install -d -m 0750 -o jellyfin -g jellyfin /var/lib/jellyfin/config
+          for seed in system.xml network.xml; do
+            if [ ! -f "/var/lib/jellyfin/config/$seed" ]; then
+              install -m 0640 -o jellyfin -g jellyfin \
+                ${jellyfinConfigSeeds}/$seed /var/lib/jellyfin/config/$seed
+            fi
+          done
+        '';
 
         hardware.graphics = {
           enable = true;

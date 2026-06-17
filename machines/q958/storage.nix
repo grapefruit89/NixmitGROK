@@ -44,6 +44,9 @@ in
     "d /data/downloads 0775 root media -"
     "d /mnt/fast_pool/cache/jellyfin 0775 jellyfin media -"
     "d /mnt/fast_pool/metadata/jellyfin 0775 jellyfin media -"
+    "d /mnt/fast_pool/metadata/sonarr 0775 sonarr media -"
+    "d /mnt/fast_pool/metadata/radarr 0775 radarr media -"
+    "d /mnt/fast_pool/metadata/prowlarr 0775 prowlarr media -"
   ];
 
   my.services.storage-automount = {

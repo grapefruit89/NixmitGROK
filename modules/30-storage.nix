@@ -218,6 +218,12 @@ in
           MaxRetentionSec=1month
         '';
       };
+
+      systemd.tmpfiles.rules =
+        (map (p: "d ${cfgImp.persistMountPoint}${p} 0755 root root -")
+          (tierAStatic.paths ++ config.my.impermanence.extraPaths))
+        ++ (map (p: "d ${p} 0755 root root -") tierB.paths)
+        ++ [ "d ${cfgImp.persistMountPoint}${journaldPath} 0755 root root -" ];
     })
 
     # ── MERGERFS HYBRID POOLING ───────────────────────────────────────────────
@@ -306,7 +312,7 @@ in
             ProtectSystem = "strict";
             ProtectHome = true;
             PrivateNetwork = true;
-            ReadWritePaths = [ "/run/nixhome-pending-watcher" ];
+            ReadWritePaths = [ "/run/nixhome-pending-disks" ];
             CapabilityBoundingSet = [ "CAP_SYS_ADMIN" ];
           };
         };
@@ -343,6 +349,15 @@ in
           "/home/${config.my.configs.identity.user}/.grok"
           "${cfgImp.persistMountPoint}/var/lib/grafana"
           "${cfgImp.persistMountPoint}/etc/nixos"
+        ];
+
+        exclude = [
+          "**/MediaCover"
+          "**/Backups"
+          "**/cache/**"
+          "**/logs/**"
+          "/mnt/fast_pool/cache"
+          "/var/cache/jellyfin"
         ];
 
         pruneOpts = [

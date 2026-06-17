@@ -34,6 +34,7 @@ in
       dataDir = "/var/lib/sonarr";
       uid = uids.sonarr;
       gid = gids.sonarr;
+      metadataDir = "/mnt/fast_pool/metadata/sonarr";
     }))
 
     (lib.mkIf cfgRadarr.enable (arrHelper.mkArrService {
@@ -42,6 +43,7 @@ in
       dataDir = "/var/lib/radarr";
       uid = uids.radarr;
       gid = gids.radarr;
+      metadataDir = "/mnt/fast_pool/metadata/radarr";
     }))
 
   ];
