@@ -195,10 +195,10 @@ lib.concatStringsSep "\n" [
         icmp type echo-request accept
         icmp type { redirect, router-advertisement } drop
         ip protocol icmp accept
-        tcp flags & (syn|ack) == syn ct state new add @portscan { ip saddr limit rate 30/minute burst 5 } drop comment "Portscan"
+        tcp flags & (syn|ack) == syn ct state new add @portscan { ip saddr limit rate 30/minute burst 5 packets } drop comment "Portscan"
         tcp flags & (syn|ack) == syn limit rate over 20/second burst 40 packets drop comment "SYN flood"
         udp dport ${tailscalePort} accept comment "Tailscale UDP"
-        ct state new udp limit rate over 50/second burst 100 drop comment "UDP flood"
+        ip protocol udp ct state new limit rate over 50/second burst 100 packets drop comment "UDP flood"
         ${lib.optionalString cfg.allowLanDns ''
         udp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN"
         tcp dport 53 ip saddr { ${lanCidrList} } accept comment "Blocky DNS LAN TCP"
@@ -206,7 +206,7 @@ lib.concatStringsSep "\n" [
         ${skuidArrGuard}
         ${dbInputGuard}
         tcp dport { 80, 443 } ct state new update @web_meter { ip saddr limit rate over ${cfg.webRateLimit} } drop
-        tcp dport { 80, 443 } ct state new limit rate over 30/second burst 60 drop comment "HTTP conn flood"
+        tcp dport { 80, 443 } ct state new limit rate over 30/second burst 60 packets drop comment "HTTP conn flood"
         tcp dport { 80, 443 } accept
         tcp dport { ${sshPortList} } ct state new update @ssh_meter { ip saddr limit rate over 10/minute } drop
         tcp dport { ${sshPortList} } ct state new update @ssh_conn { ip saddr ct count over 3 } drop comment "SSH parallel"
