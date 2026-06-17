@@ -10,14 +10,7 @@ let
     if localPath != null then
       import localPath
     else
-      builtins.trace
-        "WARNUNG: profile.local.nix fehlt — cp profile.local.nix.example profile.local.nix"
-        {
-          access.emergency = { };
-          secrets.devKeys = { };
-          secrets.privado = { };
-          restic = { healthcheckUrl = ""; };
-        };
+      throw "profile.local.nix fehlt — cp machines/q958/profile.local.nix.example machines/q958/profile.local.nix";
 in
 {
   meta = {
@@ -228,6 +221,9 @@ in
 
   restic = {
     healthcheckUrl = local.restic.healthcheckUrl or "";
+    offsiteEnable =
+      let repo = (local.secrets.restic or { }).repository or "";
+      in repo != "";
   };
 
   kernel = let

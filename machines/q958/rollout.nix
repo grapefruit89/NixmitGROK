@@ -7,7 +7,7 @@
 #   3 = Storage (automount + mergerfs wenn storage.mergerfsEnable)
 #   4 = Observability (gatus, metrics)
 #   5 = Reverse Proxy (caddy)
-#   6 = Media-Stack (*arr, jellyfin, sabnzbd, restic)
+#   6 = Media-Stack (*arr, jellyfin, sabnzbd; restic nur wenn profile.local secrets.restic.repository gesetzt)
 #   7 = Apps (vaultwarden, homepage, paperless, HA, hermes, …)
 #   8 = Security (firewall, fail2ban, crowdsec, dropbear)
 #   9 = Impermanence (production mode)
@@ -21,9 +21,13 @@ let
   inherit (rollout) erstAb;
 in
 {
-  system.nixos.distroName = lib.mkIf (stufe < 9) (lib.mkForce p.boot.menuName);
+  system.nixos.distroName =
+    if stufe >= 9 then lib.mkForce "Production (Impermanence)"
+    else lib.mkForce p.boot.menuName;
   boot.loader.systemd-boot.configurationLimit = lib.mkForce p.boot.generationLimit;
-  boot.loader.systemd-boot.sortKey = lib.mkIf (stufe < 9) (lib.mkForce p.boot.sortKey);
+  boot.loader.systemd-boot.sortKey =
+    if stufe >= 9 then lib.mkForce "9_production"
+    else lib.mkForce p.boot.sortKey;
   system.stateVersion = lib.mkForce p.system.stateVersion;
 
   my.mode =
@@ -63,7 +67,8 @@ in
     storage-automount.enable = erstAb 3;
 
     gatus.enable = erstAb 4;
-    restic-backup.enable = erstAb 6;
+    restic-backup.enable =
+      if p.restic.offsiteEnable then erstAb 6 else lib.mkForce false;
 
     jellyfin.enable = erstAb 6;
     jellyseerr.enable = erstAb 6;
@@ -94,4 +99,12 @@ in
   networking.firewall.allowedTCPPorts = lib.mkIf (stufe < 8) (
     lib.mkForce [ p.network.sshPort ]
   );
+
+  assertions = [
+    {
+      assertion = !(stufe >= 9 && p.storage.impermanence.mountPoint == "/");
+      message =
+        "Stufe 9: storage.impermanence.mountPoint muss != \"/\" sein (z. B. /persist).";
+    }
+  ];
 }

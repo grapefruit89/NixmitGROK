@@ -15,8 +15,6 @@ fi
 sudo cp "$STAGE/configuration.nix" "$ROOT/configuration.nix"
 sudo cp "$STAGE/AGENTS.md" "$ROOT/AGENTS.md"
 
-sudo rm -f \
-  "$ROOT/configuration.bootstrap.nix" \
-  "$ROOT/hardware-configuration.nix"
+sudo rm -f "$ROOT/hardware-configuration.nix"
 
 echo "deployed to $ROOT"
